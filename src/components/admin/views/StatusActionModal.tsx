@@ -23,7 +23,12 @@ const PRESET_REASONS: Record<CustomerAccountStatus, string[]> = {
     "Severe Breach of Private Banking Terms & Conditions",
     "Direct OFAC / EU / UN Sanctions List Identifier Match",
   ],
+  Pending: [
+    "Application submitted - awaiting administrative document verification",
+    "Additional compliance inquiry pending review",
+  ],
   Active: [
+    "Administrator approved new account application and activated services",
     "Compliance Review Successfully Completed & Cleared",
     "Beneficial Ownership Documents Validated & Countersigned",
     "Legitimate Transaction Source of Wealth Verified",

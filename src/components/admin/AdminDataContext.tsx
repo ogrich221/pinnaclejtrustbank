@@ -78,6 +78,7 @@ interface AdminDataContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   activeAdmin: AdministratorProfile;
+  approveCustomerAccount: (customerId: string, reason?: string) => void;
   resetToDefaults: () => void;
 }
 
@@ -407,6 +408,80 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.info("All notifications marked as read");
   };
 
+  const approveCustomerAccount = (customerId: string, reason?: string) => {
+    const target = customers.find((c) => c.id === customerId);
+    if (!target) return;
+
+    const approvalReason = reason || "Administrator approved account application and activated banking services.";
+
+    setCustomers((prev) =>
+      prev.map((c) => {
+        if (c.id === customerId) {
+          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" }));
+          return {
+            ...c,
+            accountStatus: "Active",
+            verificationStatus: "Verified",
+            documents: approvedDocs,
+            balance: 0.0,
+            availableBalance: 0.0,
+            notes: [
+              {
+                id: `note-${Date.now()}`,
+                authorName: "Administrator",
+                authorRole: "Sole Bank Administrator",
+                timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+                content: approvalReason,
+                category: "Compliance",
+              },
+              ...c.notes,
+            ],
+          };
+        }
+        return c;
+      })
+    );
+
+    try {
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (portalObj.id === customerId || portalObj.customerId === target.customerId || portalObj.email === target.email) {
+          portalObj.accountStatus = "Active";
+          portalObj.verificationStatus = "Verified";
+          portalObj.balance = 0.0;
+          portalObj.availableBalance = 0.0;
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
+        }
+      }
+    } catch {}
+
+    logAuditEntry(
+      "ACCOUNT_APPROVED",
+      target.customerId,
+      `Customer: ${target.fullName} (${target.accountType})`,
+      approvalReason,
+      undefined,
+      "Success"
+    );
+
+    const newNotif: SystemNotification = {
+      id: `notif-${Date.now()}`,
+      title: `Account Approved: ${target.fullName}`,
+      message: `Account ${target.customerId} has been approved and activated with opening balance 0.00.`,
+      timestamp: "Just now",
+      read: false,
+      severity: "Info",
+      category: "Customer",
+      actionLink: target.customerId,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    toast.success(`Account approved and activated for ${target.fullName}`, {
+      description: `Customer ID ${target.customerId} is now Active. Opening balance: 0.00.`,
+    });
+  };
+
   const resetToDefaults = () => {
     setCustomers(INITIAL_CUSTOMERS);
     setTransactions(INITIAL_TRANSACTIONS);
@@ -447,6 +522,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         markNotificationRead,
         markAllNotificationsRead,
         activeAdmin,
+        approveCustomerAccount,
         resetToDefaults,
       }}
     >

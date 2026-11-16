@@ -321,7 +321,7 @@ export const OpenAccountWizard: React.FC = () => {
         dailyTransferLimit: form.accountType === "Premium Account" ? 2500000.0 : 50000.0,
         registrationDate: new Date().toISOString().split("T")[0],
         verificationStatus: "Pending",
-        accountStatus: "Active",
+        accountStatus: "Pending",
         lastLogin: "Pending first session",
         address: {
           street: form.residentialAddress,
@@ -368,6 +368,45 @@ export const OpenAccountWizard: React.FC = () => {
 
       // Also persist the customer for the online banking portal session
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
+      // Add notification to admin queue
+      try {
+        const notifKey = "pjtb_admin_notifications_v2";
+        const storedNotifs = localStorage.getItem(notifKey);
+        const notifs = storedNotifs ? JSON.parse(storedNotifs) : [];
+        notifs.unshift({
+          id: 
+otif-,
+          title: New Application: ,
+          message: ${newCustomer.fullName} registered for  (). Opening balance: 0.00. Awaiting administrator approval.,
+          timestamp: "Just now",
+          read: false,
+          severity: "Info",
+          category: "Customer",
+          actionLink: newCustomer.customerId,
+        });
+        localStorage.setItem(notifKey, JSON.stringify(notifs));
+      } catch {}
+
+      // Add audit log entry
+      try {
+        const auditKey = "pjtb_admin_audit_logs_v2";
+        const storedLogs = localStorage.getItem(auditKey);
+        const logs = storedLogs ? JSON.parse(storedLogs) : [];
+        logs.unshift({
+          id: udit-,
+          timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
+          adminName: "Registration Gateway",
+          adminEmail: "gateway@pinnaclejtrust.com",
+          action: "NEW_ACCOUNT_APPLICATION",
+          targetType: "Customer",
+          targetId: newCustomer.customerId,
+          details: Application submitted for  (). Opening balance: 0.00.,
+          reason: "Online account registration completed by customer",
+          ipAddress: "Customer Remote IP",
+          severity: "Info",
+        });
+        localStorage.setItem(auditKey, JSON.stringify(logs));
+      } catch {}
     } catch {
       // ignore
     }

@@ -70,8 +70,8 @@ export const CustomerDashboard: React.FC = () => {
       maskedAccountNumber: "PJTB-••••-3841",
       accountType: "Private Wealth Account",
       currency: "USD",
-      balance: 14250000.0,
-      availableBalance: 14100000.0,
+      balance: 0.0,
+      availableBalance: 0.0,
       accountStatus: "Active",
       verificationStatus: "Verified",
       email: "c.kensington@kensingtontrust.co.uk",
@@ -358,6 +358,21 @@ export const CustomerDashboard: React.FC = () => {
             );
           })}
         </div>
+
+                {/* Pending Administrator Approval Banner */}
+        {customer.accountStatus === "Pending" && (
+          <div className="mb-8 rounded-2xl border border-gold/40 bg-gold/10 p-5 backdrop-blur-xl flex items-start gap-4 animate-in fade-in">
+            <Clock className="h-5 w-5 text-gold shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-gold text-sm font-display tracking-wide uppercase">
+                Account Application Under Administrative Review
+              </h3>
+              <p className="mt-1 text-xs text-ivory/80 leading-relaxed">
+                Thank you for applying to Pinnacle J Trust Bank. Your application has been logged and is awaiting formal approval from the Bank Administrator. Your opening balance is currently <span className="font-mono font-bold text-gold">$0.00</span>. Outbound transfers will activate once approval is granted.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: CUSTOMER ACCOUNT OVERVIEW */}
         {activeTab === "overview" && (

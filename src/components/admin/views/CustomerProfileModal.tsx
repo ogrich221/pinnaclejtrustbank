@@ -37,7 +37,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   onClose,
   onOpenStatusAction,
 }) => {
-  const { transactions, updateVerificationStatus, addCustomerNote, editCustomerDetails } = useAdminData();
+  const { transactions, updateVerificationStatus, addCustomerNote, editCustomerDetails, approveCustomerAccount } = useAdminData();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   // Edit form state for Profile Information
@@ -213,6 +213,30 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                    {customer.accountStatus === "Pending" && (
+            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-gold shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm text-ivory">New Account Application Awaiting Administrator Approval</p>
+                  <p className="text-xs text-ivory/70">
+                    Review applicant documents and information. Approving will activate the account with a guaranteed 0.00 opening balance.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  approveCustomerAccount(customer.id);
+                  onClose();
+                }}
+                className="rounded-xl border border-gold bg-gold px-4 py-2 text-xs font-bold text-navy-deep hover:bg-gold-light transition-all shadow-md shrink-0 flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account (0.00 Balance)
+              </button>
+            </div>
+          )}
+
           {/* TAB 1: PROFILE INFORMATION */}
           {activeTab === "profile" && (
             <div className="space-y-6">

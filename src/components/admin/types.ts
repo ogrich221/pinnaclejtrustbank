@@ -1,4 +1,4 @@
-export type CustomerAccountStatus = "Active" | "Restricted" | "Suspended" | "Flagged";
+export type CustomerAccountStatus = "Active" | "Pending" | "Restricted" | "Suspended" | "Flagged";
 export type VerificationStatus = "Verified" | "Pending" | "Unverified" | "Rejected";
 export type AccountType =
   | "Private Wealth"

@@ -26,7 +26,7 @@ interface CustomerManagementProps {
 }
 
 export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialFilter = "All" }) => {
-  const { customers, globalSearch, setGlobalSearch, setCurrentView } = useAdminData();
+  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount } = useAdminData();
 
   // Search & Filter state
   const [filterTab, setFilterTab] = useState<string>(initialFilter);
@@ -50,7 +50,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
     return customers.filter((c) => {
       // Filter tab
       if (filterTab === "Active" && c.accountStatus !== "Active") return false;
-      if (filterTab === "Pending" && c.verificationStatus !== "Pending") return false;
+      if (filterTab === "Pending" && c.accountStatus !== "Pending" && c.verificationStatus !== "Pending") return false;
       if (filterTab === "Verified" && c.verificationStatus !== "Verified") return false;
       if (filterTab === "Unverified" && c.verificationStatus !== "Unverified") return false;
       if (filterTab === "Restricted" && c.accountStatus !== "Restricted") return false;
@@ -155,7 +155,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
           {[
             { id: "All", label: "All Customers", count: customers.length },
             { id: "Active", label: "Active", count: customers.filter((c) => c.accountStatus === "Active").length },
-            { id: "Pending", label: "Pending KYC", count: customers.filter((c) => c.verificationStatus === "Pending").length },
+            { id: "Pending", label: "Pending Approval", count: customers.filter((c) => c.accountStatus === "Pending" || c.verificationStatus === "Pending").length },
             { id: "Verified", label: "Verified", count: customers.filter((c) => c.verificationStatus === "Verified").length },
             { id: "Restricted", label: "Restricted", count: customers.filter((c) => c.accountStatus === "Restricted").length },
             { id: "Suspended", label: "Suspended", count: customers.filter((c) => c.accountStatus === "Suspended").length },
@@ -330,6 +330,8 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                             c.accountStatus === "Active"
                               ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                              : c.accountStatus === "Pending"
+                              ? "border-gold/40 bg-gold/15 text-gold"
                               : c.accountStatus === "Restricted"
                               ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
                               : c.accountStatus === "Suspended"
@@ -341,6 +343,8 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                             className={`h-1.5 w-1.5 rounded-full ${
                               c.accountStatus === "Active"
                                 ? "bg-emerald-400 animate-pulse"
+                                : c.accountStatus === "Pending"
+                                ? "bg-gold animate-ping"
                                 : c.accountStatus === "Restricted"
                                 ? "bg-amber-400"
                                 : "bg-red-400"
@@ -352,7 +356,18 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
 
                       {/* Three-Dot Actions Menu */}
                       <td className="py-4 pl-3 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative inline-block text-left">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {(c.accountStatus === "Pending" || c.verificationStatus === "Pending") && (
+                            <button
+                              type="button"
+                              onClick={() => approveCustomerAccount(c.id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-sm"
+                              title="Approve Customer Application & Activate Account"
+                            >
+                              <CheckCircle2 className="h-3 w-3" /> Approve
+                            </button>
+                          )}
+                          <div className="relative inline-block text-left">
                           <button
                             type="button"
                             onClick={() => setActiveMenuId(isMenuOpen ? null : c.id)}
