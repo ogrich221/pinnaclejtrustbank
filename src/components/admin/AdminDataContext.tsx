@@ -470,10 +470,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       title: `Account Approved: ${target.fullName}`,
       message: `Account ${target.customerId} has been approved and activated with opening balance 0.00.`,
       timestamp: "Just now",
-      read: false,
+      isRead: false,
       severity: "Info",
       category: "Customer",
-      actionLink: target.customerId,
+      actionUrl: target.customerId,
     };
     setNotifications((prev) => [newNotif, ...prev]);
 

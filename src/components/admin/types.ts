@@ -164,7 +164,7 @@ export interface SystemNotification {
   title: string;
   message: string;
   timestamp: string;
-  category: "Security" | "Verification" | "Compliance" | "Transaction" | "System";
+  category: "Security" | "Verification" | "Compliance" | "Transaction" | "System" | "Customer";
   severity: "Info" | "Warning" | "Critical";
   isRead: boolean;
   actionUrl?: string;
