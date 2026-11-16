@@ -7,6 +7,7 @@ import hero from "@/assets/hq-hero.jpg";
 import sunset from "@/assets/hq-sunset.jpg";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { GlobalBranchesGlobe } from "@/components/site/GlobalBranchesGlobe";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -174,6 +175,8 @@ function Index() {
           </div>
         </div>
       </section>
+
+      <GlobalBranchesGlobe />
 
       <SiteFooter />
     </div>
