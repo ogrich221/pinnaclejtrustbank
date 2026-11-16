@@ -417,7 +417,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id === customerId) {
-          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" }));
+          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" as const }));
           return {
             ...c,
             accountStatus: "Active",

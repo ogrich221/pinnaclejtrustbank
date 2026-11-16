@@ -452,7 +452,7 @@ export const OpenAccountWizard: React.FC = () => {
           <div className="mb-8 rounded-2xl border border-ivory/10 bg-[#0C1B30]/80 p-5 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between text-xs text-ivory/60 mb-3">
               <span className="font-mono uppercase tracking-wider text-gold font-semibold">
-                Step {currentStep} of 6: {stepsList[currentStep - 1].title}
+                Step {currentStep} of 6: {stepsList[currentStep - 1]?.title ?? "Application"}
               </span>
               <span className="font-mono">
                 {Math.round(((currentStep - 1) / 5) * 100)}% Complete

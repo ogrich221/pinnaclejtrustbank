@@ -131,7 +131,7 @@ export interface AuditLogEntry {
   ipAddress: string;
   reason: string;
   note?: string;
-  severity: "Info" | "Warning" | "Critical";
+  severity: "Info" | "Warning" | "Critical" | "Success";
 }
 
 // Single Administrator Model
