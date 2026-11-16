@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as BusinessBankingRouteImport } from './routes/business-banking'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalBankingRouteImport } from './routes/digital-banking'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OpenAccountRouteImport } from './routes/open-account'
 import { Route as PersonalBankingRouteImport } from './routes/personal-banking'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SecurityRouteImport } from './routes/security'
@@ -33,9 +36,24 @@ const BusinessBankingRoute = BusinessBankingRouteImport.update({
   path: '/business-banking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DigitalBankingRoute = DigitalBankingRouteImport.update({
   id: '/digital-banking',
   path: '/digital-banking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpenAccountRoute = OpenAccountRouteImport.update({
+  id: '/open-account',
+  path: '/open-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonalBankingRoute = PersonalBankingRouteImport.update({
@@ -63,7 +81,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/business-banking': typeof BusinessBankingRoute
+  '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/login': typeof LoginRoute
+  '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
@@ -73,7 +94,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/business-banking': typeof BusinessBankingRoute
+  '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/login': typeof LoginRoute
+  '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
@@ -84,7 +108,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/business-banking': typeof BusinessBankingRoute
+  '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/login': typeof LoginRoute
+  '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
@@ -96,7 +123,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/business-banking'
+    | '/contact'
     | '/digital-banking'
+    | '/login'
+    | '/open-account'
     | '/personal-banking'
     | '/privacy'
     | '/security'
@@ -106,7 +136,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/business-banking'
+    | '/contact'
     | '/digital-banking'
+    | '/login'
+    | '/open-account'
     | '/personal-banking'
     | '/privacy'
     | '/security'
@@ -116,7 +149,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/business-banking'
+    | '/contact'
     | '/digital-banking'
+    | '/login'
+    | '/open-account'
     | '/personal-banking'
     | '/privacy'
     | '/security'
@@ -127,7 +163,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   BusinessBankingRoute: typeof BusinessBankingRoute
+  ContactRoute: typeof ContactRoute
   DigitalBankingRoute: typeof DigitalBankingRoute
+  LoginRoute: typeof LoginRoute
+  OpenAccountRoute: typeof OpenAccountRoute
   PersonalBankingRoute: typeof PersonalBankingRoute
   PrivacyRoute: typeof PrivacyRoute
   SecurityRoute: typeof SecurityRoute
@@ -157,11 +196,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BusinessBankingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/digital-banking': {
       id: '/digital-banking'
       path: '/digital-banking'
       fullPath: '/digital-banking'
       preLoaderRoute: typeof DigitalBankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/open-account': {
+      id: '/open-account'
+      path: '/open-account'
+      fullPath: '/open-account'
+      preLoaderRoute: typeof OpenAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personal-banking': {
@@ -199,7 +259,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BusinessBankingRoute: BusinessBankingRoute,
+  ContactRoute: ContactRoute,
   DigitalBankingRoute: DigitalBankingRoute,
+  LoginRoute: LoginRoute,
+  OpenAccountRoute: OpenAccountRoute,
   PersonalBankingRoute: PersonalBankingRoute,
   PrivacyRoute: PrivacyRoute,
   SecurityRoute: SecurityRoute,
