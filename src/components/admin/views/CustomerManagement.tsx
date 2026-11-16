@@ -438,6 +438,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                               )}
                             </div>
                           )}
+                          </div>
                         </div>
                       </td>
                     </tr>
