@@ -60,7 +60,7 @@ function Index() {
         <div className="absolute inset-0 bg-overlay-side" />
         <SiteHeader overlay />
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl items-center px-6 pt-24">
-          <div className="max-w-2xl animate-rise">
+          <div className="max-w-2xl animate-rise glass-dark rounded-3xl p-8 sm:p-12">
             <p className="eyebrow">Pinnacle J Trust Bank</p>
             <h1 className="mt-6 text-5xl leading-[1.02] text-ivory sm:text-6xl lg:text-7xl">
               Your Financial Future.<br /><em className="text-gold">Our Pinnacle.</em>
@@ -77,7 +77,7 @@ function Index() {
       </section>
 
       {/* TRUST */}
-      <section className="mx-auto max-w-7xl px-6 py-28">
+      <section className="relative overflow-hidden bg-aurora"><div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-gold/30 blur-3xl animate-drift" /><div className="relative mx-auto max-w-7xl px-6 py-28">
         <div className="mx-auto max-w-2xl text-center">
           <p className="eyebrow">Our Foundation</p>
           <h2 className="mt-4 text-4xl md:text-5xl">Built on Trust. Driven by Excellence.</h2>
@@ -85,28 +85,29 @@ function Index() {
         </div>
         <div className="mt-16 grid gap-6 md:grid-cols-3">
           {trust.map(({ I, t, d }) => (
-            <div key={t} className="group border border-border bg-card p-10 transition-all duration-500 hover:-translate-y-1 hover:border-gold hover:shadow-elegant">
+            <div key={t} className="group glass rounded-2xl p-10 transition-all duration-500 hover:-translate-y-2 hover:border-gold">
               <I strokeWidth={1.2} className="h-10 w-10 text-gold transition-transform duration-500 group-hover:scale-110" />
               <h3 className="mt-8 text-2xl">{t}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{d}</p>
             </div>
           ))}
         </div>
+      </div>
       </section>
 
       {/* SERVICES */}
-      <section id="services" className="scroll-mt-8 bg-silver py-28">
+      <section id="services" className="relative scroll-mt-8 overflow-hidden bg-navy py-28">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div><p className="eyebrow">Our Services</p><h2 className="mt-4 text-4xl md:text-5xl">Banking Designed Around You.</h2></div>
+            <div className="pointer-events-none absolute right-0 top-0 h-96 w-96 rounded-full bg-gold/25 blur-3xl animate-drift" /><div className="relative"><p className="eyebrow">Our Services</p><h2 className="mt-4 text-4xl text-ivory md:text-5xl">Banking Designed Around You.</h2></div>
           </div>
-          <div className="mt-14 grid gap-px bg-border md:grid-cols-2 lg:grid-cols-5">
+          <div className="relative mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {services.map(({ I, t, d, to }) => (
-              <div key={t} className="group flex flex-col bg-card p-8 transition-colors duration-500 hover:bg-navy">
+              <div key={t} className="group glass-dark flex flex-col rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 hover:border-gold/50">
                 <I strokeWidth={1.2} className="h-9 w-9 text-gold" />
-                <h3 className="mt-8 text-xl uppercase tracking-wide group-hover:text-ivory">{t}</h3>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground group-hover:text-ivory/70">{d}</p>
-                <Link to={to} className="mt-8 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-navy group-hover:text-gold">LEARN MORE <ArrowRight className="h-3.5 w-3.5" /></Link>
+                <h3 className="mt-8 text-xl uppercase tracking-wide text-ivory">{t}</h3>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-ivory/65">{d}</p>
+                <Link to={to} className="mt-8 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-gold">LEARN MORE <ArrowRight className="h-3.5 w-3.5" /></Link>
               </div>
             ))}
           </div>
@@ -134,9 +135,9 @@ function Index() {
             <h2 className="mt-4 text-4xl md:text-5xl">Your Security Is Our Priority.</h2>
             <p className="mt-6 text-ivory/70">Confidence begins with knowing your financial information deserves careful protection.</p>
           </div>
-          <div className="mt-16 grid gap-px bg-ivory/10 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {security.map(({ I, t }) => (
-              <div key={t} className="flex items-center gap-5 bg-navy-deep p-8 transition-colors hover:bg-navy">
+              <div key={t} className="glass-dark flex items-center gap-5 rounded-2xl p-8 transition-all hover:-translate-y-1 hover:border-gold/40">
                 <I strokeWidth={1.2} className="h-8 w-8 shrink-0 text-gold" /><span className="font-display text-xl">{t}</span>
               </div>
             ))}
@@ -146,19 +147,19 @@ function Index() {
       </section>
 
       {/* WHY */}
-      <section className="mx-auto max-w-7xl px-6 py-28">
+      <section className="bg-aurora"><div className="mx-auto max-w-7xl px-6 py-28">
         <p className="eyebrow">The Pinnacle Difference</p>
         <h2 className="mt-4 text-4xl md:text-5xl">Why Choose Pinnacle J Trust Bank?</h2>
         <div className="mt-16 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           {why.map(([n, t, d]) => (
-            <div key={n} className="group border-t border-border pt-8 transition-colors hover:border-gold">
+            <div key={n} className="group glass rounded-2xl p-8 transition-all hover:-translate-y-1 hover:border-gold">
               <span className="font-display text-6xl text-gold/70 transition-colors group-hover:text-gold">{n}</span>
               <h3 className="mt-6 font-sans text-sm font-semibold tracking-[0.2em] uppercase">{t}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{d}</p>
             </div>
           ))}
         </div>
-      </section>
+      </div></section>
 
       {/* CTA */}
       <section className="relative overflow-hidden">
