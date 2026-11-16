@@ -23,6 +23,8 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   LogOut,
   ExternalLink,
   RotateCcw,
@@ -30,6 +32,7 @@ import {
   User,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
+import { BankLoadingScreen } from "@/components/site/BankLoadingScreen";
 import { useAdminData, AdminViewId } from "./AdminDataContext";
 import { DashboardOverview } from "./views/DashboardOverview";
 import { CustomerManagement } from "./views/CustomerManagement";
@@ -43,6 +46,11 @@ export const AdminLayout: React.FC = () => {
   const {
     currentView,
     setCurrentView,
+    canGoBack,
+    canGoForward,
+    navigateBack,
+    navigateForward,
+    isLoadingView,
     globalSearch,
     setGlobalSearch,
     notifications,
@@ -254,7 +262,7 @@ export const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
         {/* TOP TRANSPARENT GLASS NAVIGATION BAR */}
         <header className="sticky top-0 z-20 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between gap-4">
-          {/* Left: Title & Breadcrumbs */}
+          {/* Left: Simple Back & Front Navigation Arrows + Title & Breadcrumbs */}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -264,6 +272,31 @@ export const AdminLayout: React.FC = () => {
             >
               <Menu className="h-5 w-5" />
             </button>
+
+            {/* Simple Back & Front Navigation Arrows */}
+            <div className="flex items-center gap-1 rounded-xl border border-ivory/15 bg-white/[0.04] p-1 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={navigateBack}
+                disabled={!canGoBack}
+                title="Go Back"
+                aria-label="Go Back"
+                className="rounded-lg p-1.5 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-ivory/70 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="h-3 w-px bg-ivory/15" />
+              <button
+                type="button"
+                onClick={navigateForward}
+                disabled={!canGoForward}
+                title="Go Front / Forward"
+                aria-label="Go Front"
+                className="rounded-lg p-1.5 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-ivory/70 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
 
             <div>
               <div className="flex items-center gap-2 text-[11px] text-ivory/50 font-mono">
@@ -382,80 +415,91 @@ export const AdminLayout: React.FC = () => {
 
         {/* MAIN BODY CONTENT AREA */}
         <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
-          {currentView === "dashboard" && <DashboardOverview />}
-
-          {(currentView === "customers" ||
-            currentView === "active-accounts" ||
-            currentView === "pending-verification" ||
-            currentView === "restricted-accounts" ||
-            currentView === "suspended-accounts") && (
-            <CustomerManagement
-              initialFilter={
-                currentView === "active-accounts"
-                  ? "Active"
-                  : currentView === "pending-verification"
-                  ? "Pending"
-                  : currentView === "restricted-accounts"
-                  ? "Restricted"
-                  : currentView === "suspended-accounts"
-                  ? "Suspended"
-                  : "All"
-              }
-            />
-          )}
-
-          {(currentView === "transactions" ||
-            currentView === "deposits" ||
-            currentView === "withdrawals" ||
-            currentView === "transfers" ||
-            currentView === "payment-history") && (
-            <TransactionMonitoring
-              initialFilter={
-                currentView === "deposits"
-                  ? "Deposits"
-                  : currentView === "withdrawals" || currentView === "transfers"
-                  ? "Withdrawals"
-                  : currentView === "payment-history"
-                  ? "Settled"
-                  : "All"
-              }
-            />
-          )}
-
-          {currentView === "analytics" && <AnalyticsView />}
-
-          {(currentView === "security" || currentView === "activity-logs") && <SecurityAuditView />}
-
-          {currentView === "admin-profile" && <AdministratorProfileView />}
-
-          {/* Simple Settings / Support panels */}
-          {currentView === "settings" && (
-            <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-8 shadow-xl backdrop-blur-md space-y-6">
-              <h2 className="text-2xl font-display font-bold text-ivory">System Parameters & Clearing Rules</h2>
-              <p className="text-xs text-ivory/60">Configure global transaction limits, velocity rules, and KYC thresholds</p>
-              <div className="grid gap-4 sm:grid-cols-2 text-xs">
-                <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
-                  <p className="font-semibold text-gold">OFAC Automated Screening</p>
-                  <p className="text-ivory/70 mt-1">Continuous synchronization enabled with SDN Delta feeds</p>
-                </div>
-                <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
-                  <p className="font-semibold text-gold">Administrator Authority</p>
-                  <p className="text-ivory/70 mt-1">Single Administrator holds universal signoff authority</p>
-                </div>
-              </div>
+          {isLoadingView ? (
+            <div className="py-16">
+              <BankLoadingScreen
+                fullScreen={false}
+                message="PINNACLE J TRUST BANK"
+                subtext="Loading administrative registry..."
+              />
             </div>
-          )}
+          ) : (
+            <>
+              {currentView === "dashboard" && <DashboardOverview />}
 
-          {currentView === "support" && (
-            <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-8 shadow-xl backdrop-blur-md space-y-6">
-              <h2 className="text-2xl font-display font-bold text-ivory">Administrative Support & Technical Escalation</h2>
-              <p className="text-xs text-ivory/60">Direct secure channel to engineering and risk governance desk</p>
-              <div className="rounded-xl border border-gold/30 bg-navy/60 p-5 text-xs text-ivory/80 space-y-2">
-                <p><strong className="text-gold">Internal Hotline:</strong> +44 (0)20 7946 0999 (Secure Desk Ext 402)</p>
-                <p><strong className="text-gold">Encrypted Comms:</strong> support-internal@pinnaclejtrust.com</p>
-                <p><strong className="text-gold">Operations Center:</strong> 24/7 Global Clearing & Compliance Monitoring</p>
-              </div>
-            </div>
+              {(currentView === "customers" ||
+                currentView === "active-accounts" ||
+                currentView === "pending-verification" ||
+                currentView === "restricted-accounts" ||
+                currentView === "suspended-accounts") && (
+                <CustomerManagement
+                  initialFilter={
+                    currentView === "active-accounts"
+                      ? "Active"
+                      : currentView === "pending-verification"
+                      ? "Pending"
+                      : currentView === "restricted-accounts"
+                      ? "Restricted"
+                      : currentView === "suspended-accounts"
+                      ? "Suspended"
+                      : "All"
+                  }
+                />
+              )}
+
+              {(currentView === "transactions" ||
+                currentView === "deposits" ||
+                currentView === "withdrawals" ||
+                currentView === "transfers" ||
+                currentView === "payment-history") && (
+                <TransactionMonitoring
+                  initialFilter={
+                    currentView === "deposits"
+                      ? "Deposits"
+                      : currentView === "withdrawals" || currentView === "transfers"
+                      ? "Withdrawals"
+                      : currentView === "payment-history"
+                      ? "Settled"
+                      : "All"
+                  }
+                />
+              )}
+
+              {currentView === "analytics" && <AnalyticsView />}
+
+              {(currentView === "security" || currentView === "activity-logs") && <SecurityAuditView />}
+
+              {currentView === "admin-profile" && <AdministratorProfileView />}
+
+              {currentView === "settings" && (
+                <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-8 shadow-xl backdrop-blur-md space-y-6">
+                  <h2 className="text-2xl font-display font-bold text-ivory">System Parameters & Clearing Rules</h2>
+                  <p className="text-xs text-ivory/60">Configure global transaction limits, velocity rules, and KYC thresholds</p>
+                  <div className="grid gap-4 sm:grid-cols-2 text-xs">
+                    <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
+                      <p className="font-semibold text-gold">OFAC Automated Screening</p>
+                      <p className="text-ivory/70 mt-1">Continuous synchronization enabled with SDN Delta feeds</p>
+                    </div>
+                    <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
+                      <p className="font-semibold text-gold">Administrator Authority</p>
+                      <p className="text-ivory/70 mt-1">Single Administrator holds universal signoff authority</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentView === "support" && (
+                <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-8 shadow-xl backdrop-blur-md space-y-6">
+                  <h2 className="text-2xl font-display font-bold text-ivory">Administrative Support & Technical Escalation</h2>
+                  <p className="text-xs text-ivory/60">Direct secure channel to engineering and risk governance desk</p>
+                  <div className="rounded-xl border border-gold/30 bg-navy/60 p-5 text-xs text-ivory/80 space-y-2">
+                    <p><strong className="text-gold">Internal Hotline:</strong> +44 (0)20 7946 0999 (Secure Desk Ext 402)</p>
+                    <p><strong className="text-gold">Encrypted Comms:</strong> support-internal@pinnaclejtrust.com</p>
+                    <p><strong className="text-gold">Operations Center:</strong> 24/7 Global Clearing & Compliance Monitoring</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>

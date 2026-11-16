@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./Logo";
 import { LanguageSelector } from "./LanguageSelector";
@@ -19,8 +19,29 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
       {/* Top Utility Bar with Language Selection at Top Left */}
       <div className="border-b border-ivory/10 bg-navy-deep/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
-          {/* Top-Left: Language Selector */}
-          <div className="flex items-center gap-3">
+          {/* Top-Left: Simple Back & Front Navigation Arrows + Language Selector */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-0.5 rounded-full border border-ivory/15 bg-navy-deep/80 px-1 py-0.5 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                title="Go Back"
+                aria-label="Go Back"
+                className="rounded-full p-1 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <div className="h-2.5 w-px bg-ivory/15" />
+              <button
+                type="button"
+                onClick={() => window.history.forward()}
+                title="Go Front / Forward"
+                aria-label="Go Front"
+                className="rounded-full p-1 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
             <LanguageSelector variant="header" />
             <span className="hidden sm:inline text-ivory/20">|</span>
             <span className="hidden sm:inline text-[11px] font-medium tracking-widest text-ivory/60 uppercase">

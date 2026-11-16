@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   CustomerRecord,
   TransactionRecord,
@@ -46,6 +46,14 @@ interface AdminDataContextType {
   notifications: SystemNotification[];
   currentView: AdminViewId;
   setCurrentView: (view: AdminViewId) => void;
+  // Simple Back & Front Navigation
+  canGoBack: boolean;
+  canGoForward: boolean;
+  navigateBack: () => void;
+  navigateForward: () => void;
+  isLoadingView: boolean;
+  setIsLoadingView: (loading: boolean) => void;
+  // Selection & Search
   selectedCustomerId: string | null;
   setSelectedCustomerId: (id: string | null) => void;
   selectedTransactionId: string | null;
@@ -119,7 +127,54 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
-  const [currentView, setCurrentView] = useState<AdminViewId>("dashboard");
+  // Navigation History State for Back & Front Navigation
+  const [historyStack, setHistoryStack] = useState<AdminViewId[]>(["dashboard"]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const [isLoadingView, setIsLoadingView] = useState<boolean>(true);
+
+  // Initial loading simulation displaying bank logo
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoadingView(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const currentView = historyStack[historyIndex] || "dashboard";
+
+  const changeView = useCallback((nextView: AdminViewId) => {
+    if (nextView === currentView) return;
+    setIsLoadingView(true);
+    setHistoryStack((prev) => {
+      const trimmed = prev.slice(0, historyIndex + 1);
+      return [...trimmed, nextView];
+    });
+    setHistoryIndex((prev) => prev + 1);
+
+    setTimeout(() => {
+      setIsLoadingView(false);
+    }, 280);
+  }, [currentView, historyIndex]);
+
+  const canGoBack = historyIndex > 0;
+  const canGoForward = historyIndex < historyStack.length - 1;
+
+  const navigateBack = useCallback(() => {
+    if (canGoBack) {
+      setIsLoadingView(true);
+      setHistoryIndex((prev) => prev - 1);
+      setTimeout(() => setIsLoadingView(false), 200);
+    }
+  }, [canGoBack]);
+
+  const navigateForward = useCallback(() => {
+    if (canGoForward) {
+      setIsLoadingView(true);
+      setHistoryIndex((prev) => prev + 1);
+      setTimeout(() => setIsLoadingView(false), 200);
+    }
+  }, [canGoForward]);
+
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>("");
@@ -372,7 +427,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         admin: activeAdmin,
         notifications,
         currentView,
-        setCurrentView,
+        setCurrentView: changeView,
+        canGoBack,
+        canGoForward,
+        navigateBack,
+        navigateForward,
+        isLoadingView,
+        setIsLoadingView,
         selectedCustomerId,
         setSelectedCustomerId,
         selectedTransactionId,

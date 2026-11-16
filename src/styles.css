@@ -253,3 +253,6 @@
 }
 @keyframes drift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-40px) scale(1.1); } }
 @utility animate-drift { animation: drift 14s ease-in-out infinite; }
+
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@utility animate-shimmer { animation: shimmer 1.6s ease-in-out infinite; }
