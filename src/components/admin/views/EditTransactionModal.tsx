@@ -57,7 +57,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       purpose: purpose.trim(),
       narration: purpose.trim(),
       status,
-      counterparty: counterparty.trim() || undefined,
+      ...(counterparty.trim() ? { counterparty: counterparty.trim() } : {}),
       category,
     });
 

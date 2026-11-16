@@ -86,7 +86,7 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
       date,
       time,
       narration: narration.trim(),
-      counterparty: counterparty.trim() || undefined,
+      ...(counterparty.trim() ? { counterparty: counterparty.trim() } : {}),
       category,
     });
 
