@@ -30,6 +30,15 @@
  */
 
 @theme inline {
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-silver: var(--silver);
+  --color-ivory: var(--ivory);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -73,7 +82,35 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.25rem;
+  --navy: oklch(0.2 0.045 255);
+  --navy-deep: oklch(0.15 0.04 255);
+  --gold: oklch(0.73 0.09 80);
+  --gold-soft: oklch(0.85 0.06 82);
+  --silver: oklch(0.94 0.008 250);
+  --ivory: oklch(1 0 0);
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.2 0.045 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.045 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.045 255);
+  --primary: oklch(0.2 0.045 255);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.94 0.008 250);
+  --secondary-foreground: oklch(0.2 0.045 255);
+  --muted: oklch(0.94 0.008 250);
+  --muted-foreground: oklch(0.45 0.03 255);
+  --accent: oklch(0.73 0.09 80);
+  --accent-foreground: oklch(0.15 0.04 255);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.88 0.012 250);
+  --input: oklch(0.86 0.012 250);
+  --ring: oklch(0.73 0.09 80);
+  --gradient-navy: linear-gradient(180deg, oklch(0.15 0.04 255 / 0.55), oklch(0.15 0.04 255 / 0.92));
+  --gradient-side: linear-gradient(90deg, oklch(0.15 0.04 255 / 0.92) 0%, oklch(0.15 0.04 255 / 0.6) 45%, oklch(0.15 0.04 255 / 0.1) 100%);
+  --shadow-elegant: 0 24px 60px -24px oklch(0.15 0.04 255 / 0.35);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -151,5 +188,47 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+@utility bg-overlay-side { background-image: var(--gradient-side); }
+@utility bg-overlay-navy { background-image: var(--gradient-navy); }
+@utility shadow-elegant { box-shadow: var(--shadow-elegant); }
+@utility btn-gold {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .9rem 1.75rem; font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  background: var(--gold); color: var(--navy-deep); border: 1px solid var(--gold); transition: all .3s;
+  &:hover { background: var(--gold-soft); border-color: var(--gold-soft); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+@utility btn-outline-light {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .9rem 1.75rem; font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ivory); border: 1px solid oklch(1 0 0 / 0.4); transition: all .3s;
+  &:hover { border-color: var(--gold); color: var(--gold); }
+}
+@utility btn-navy {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .9rem 1.75rem; font-size: .75rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  background: var(--navy); color: var(--ivory); border: 1px solid var(--navy); transition: all .3s;
+  &:hover { background: var(--navy-deep); color: var(--gold-soft); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+@utility field {
+  width: 100%; padding: .8rem 1rem; background: var(--card); border: 1px solid var(--input);
+  font-size: .95rem; outline: none; transition: border-color .2s;
+  &:focus { border-color: var(--gold); box-shadow: 0 0 0 3px oklch(0.73 0.09 80 / 0.2); }
+  &[aria-invalid="true"] { border-color: var(--destructive); }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@utility animate-rise { animation: rise 1s cubic-bezier(.2,.7,.2,1) both; }

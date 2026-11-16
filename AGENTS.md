@@ -28,3 +28,4 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+- Site chrome (header/footer/info-page shell) lives in src/components/site; form rules live in src/lib/validation.ts so they can be unit-tested.
