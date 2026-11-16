@@ -47,8 +47,9 @@ const why = [
   ["04", "Reliable Support", "Professional assistance whenever customers need guidance."],
 ];
 const tx = [
-  { n: "Whole Foods Market", a: "-84.20", out: true }, { n: "Payroll Deposit · Executive", a: "+3,200.00", out: false },
-  { n: "Metropolitan Power & Gas", a: "-126.45", out: true }, { n: "Inbound Wire Settlement", a: "+250.00", out: false },
+  { n: "Global Clearance Settlement", a: "+0.00", out: false },
+  { n: "Treasury Liquidity Reserve", a: "+0.00", out: false },
+  { n: "Secure Custody Allocation", a: "+0.00", out: false },
 ];
 
 function Index() {
@@ -196,14 +197,14 @@ function DeviceShowcase() {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 bg-navy p-4 text-ivory">
               <p className="text-ivory/60">Primary Checking Account</p>
-              <p className="mt-1 font-display text-2xl">$12,480.00</p>
+              <p className="mt-1 font-display text-2xl">$0.00</p>
               <div className="mt-3 flex gap-2">{["Transfer", "Pay", "Statements"].map((b) => <span key={b} className="border border-gold/50 px-2 py-1 text-gold">{b}</span>)}</div>
             </div>
             <div className="bg-silver p-4">
               <p className="text-muted-foreground">High-Yield Reserve</p>
-              <p className="mt-1 font-display text-xl">$8,200</p>
+              <p className="mt-1 font-display text-xl">$0.00</p>
               <div className="mt-3 h-1.5 bg-border"><div className="h-full w-2/3 bg-gold" /></div>
-              <p className="mt-1 text-muted-foreground">66% of goal</p>
+              <p className="mt-1 text-muted-foreground">Standby</p>
             </div>
           </div>
           <p className="mb-2 mt-4 font-semibold">Recent Activity</p>
@@ -223,7 +224,7 @@ function DeviceShowcase() {
         <div className="rounded-[1.2rem] bg-navy p-3 text-[9px] text-ivory">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ivory/20" />
           <p className="text-ivory/60">Available Balance</p>
-          <p className="font-display text-lg">$12,480.00</p>
+          <p className="font-display text-lg">$0.00</p>
           <div className="my-3 grid grid-cols-3 gap-1 text-center">{["Send", "Pay", "Save"].map((b) => <span key={b} className="bg-ivory/10 py-1.5 text-gold">{b}</span>)}</div>
           <p className="flex items-center gap-1 text-ivory/60"><ShieldCheck className="h-3 w-3 text-gold" /> Secure session</p>
           <ul className="mt-2 space-y-1.5">{tx.slice(0, 3).map((t) => <li key={t.n} className="flex justify-between"><span className="truncate">{t.n}</span><span>{t.a}</span></li>)}</ul>

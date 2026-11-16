@@ -87,10 +87,10 @@ interface AdminDataContextType {
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  CUSTOMERS: "pjtb_admin_customers_v2",
-  TRANSACTIONS: "pjtb_admin_transactions_v2",
-  AUDIT_LOGS: "pjtb_admin_audit_logs_v2",
-  NOTIFICATIONS: "pjtb_admin_notifications_v2",
+  CUSTOMERS: "pjtb_admin_customers_v3",
+  TRANSACTIONS: "pjtb_admin_transactions_v3",
+  AUDIT_LOGS: "pjtb_admin_audit_logs_v3",
+  NOTIFICATIONS: "pjtb_admin_notifications_v3",
 };
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -135,8 +135,22 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const [isLoadingView, setIsLoadingView] = useState<boolean>(true);
 
-  // Initial loading simulation displaying bank logo
+  // Initial loading simulation displaying bank logo & cleaning legacy mock storage
   useEffect(() => {
+    try {
+      [
+        "pjtb_admin_customers_v2",
+        "pjtb_admin_transactions_v2",
+        "pjtb_admin_audit_logs_v2",
+        "pjtb_admin_notifications_v2",
+        "pjtb_admin_customers",
+        "pjtb_admin_transactions",
+        "pjtb_admin_audit_logs",
+        "pjtb_admin_notifications",
+      ].forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
     const timer = setTimeout(() => {
       setIsLoadingView(false);
     }, 450);
@@ -661,10 +675,15 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTransactions(INITIAL_TRANSACTIONS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setNotifications(INITIAL_NOTIFICATIONS);
-    localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
-    localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
-    localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
-    toast.info("System records reloaded to default state");
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(INITIAL_CUSTOMERS));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
+      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(INITIAL_AUDIT_LOGS));
+      localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_NOTIFICATIONS));
+    } catch {
+      // ignore
+    }
+    toast.info("System records reloaded to default state (1 testrun account)");
   };
 
   return (

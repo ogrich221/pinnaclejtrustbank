@@ -40,6 +40,7 @@ import { TransactionMonitoring } from "./views/TransactionMonitoring";
 import { AnalyticsView } from "./views/AnalyticsView";
 import { SecurityAuditView } from "./views/SecurityAuditView";
 import { AdministratorProfileView } from "./views/AdministratorProfileView";
+import { NotificationsView } from "./views/NotificationsView";
 import { NotificationsDrawer } from "./views/NotificationsDrawer";
 
 export const AdminLayout: React.FC = () => {
@@ -470,6 +471,8 @@ export const AdminLayout: React.FC = () => {
               {(currentView === "security" || currentView === "activity-logs") && <SecurityAuditView />}
 
               {currentView === "admin-profile" && <AdministratorProfileView />}
+
+              {currentView === "notifications" && <NotificationsView />}
 
               {currentView === "settings" && (
                 <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-8 shadow-xl backdrop-blur-md space-y-6">

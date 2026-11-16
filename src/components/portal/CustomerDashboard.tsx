@@ -31,6 +31,8 @@ import {
   Building,
   KeyRound,
   FileText,
+  Camera,
+  Upload,
   Search,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
@@ -68,22 +70,22 @@ export const CustomerDashboard: React.FC = () => {
       // ignore
     }
     return {
-      fullName: "Lord Charles H. Kensington",
+      fullName: "Testrun Customer",
       customerId: "PJ-89201",
       accountNumber: "PJTB-8492-3841-09",
       maskedAccountNumber: "PJTB-••••-3841",
-      accountType: "Private Wealth Account",
+      accountType: "Premier Checking",
       currency: "USD",
       balance: 0.0,
       availableBalance: 0.0,
-      accountStatus: "Active",
-      verificationStatus: "Verified",
-      email: "c.kensington@kensingtontrust.co.uk",
-      phone: "+44 20 7946 0912",
+      accountStatus: "Pending",
+      verificationStatus: "Pending",
+      email: "testrun@pinnaclejtrust.com",
+      phone: "+1 (212) 555-0199",
       address: {
-        street: "44 Grosvenor Square, Mayfair",
-        city: "London",
-        country: "United Kingdom",
+        street: "28 Wall Street, Suite 4400",
+        city: "New York",
+        country: "United States",
       },
     };
   });
@@ -1130,6 +1132,64 @@ export const CustomerDashboard: React.FC = () => {
               <span className="text-[10px] font-mono tracking-widest text-gold uppercase">Institutional Credentials</span>
               <h3 className="text-3xl font-display font-bold text-ivory mt-1">Profile & Identification Settings</h3>
               <p className="text-xs text-ivory/60 mt-0.5">Glassmorphic security dashboard for personal data and verified account credentials</p>
+            </div>
+
+            {/* Profile Avatar Management Card */}
+            <div className="relative z-10 rounded-2xl border border-white/15 bg-white/[0.04] p-6 shadow-xl backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="relative group">
+                  {customer.avatarUrl ? (
+                    <img
+                      src={customer.avatarUrl}
+                      alt={customer.fullName}
+                      className="h-20 w-20 rounded-full object-cover border-2 border-gold shadow-xl"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold/40 bg-gold/15 text-2xl font-bold font-display text-gold shadow-xl">
+                      {customer.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Change Profile Picture"
+                    className="absolute inset-0 rounded-full bg-navy-deep/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-gold transition-opacity cursor-pointer"
+                  >
+                    <Camera className="h-6 w-6" />
+                  </button>
+                </div>
+                <div>
+                  <h4 className="font-display font-bold text-lg text-ivory">{customer.fullName}</h4>
+                  <p className="text-xs text-gold font-mono">{customer.accountNumber}</p>
+                  <p className="text-[11px] text-ivory/50 mt-1">Supported formats: JPEG, PNG, WebP (Max 5MB)</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-md flex items-center gap-2"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Upload Photo
+                </button>
+                {customer.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-all"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="relative z-10 grid gap-5 sm:grid-cols-2 text-xs">

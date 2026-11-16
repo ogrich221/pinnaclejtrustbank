@@ -22,22 +22,75 @@ import {
   Legend,
 } from "recharts";
 import { ANALYTICS_TREND_DATA } from "../mockData";
+import { useAdminData } from "../AdminDataContext";
 
 export const AnalyticsView: React.FC = () => {
+  const { customers, transactions } = useAdminData();
   const [dateRange, setDateRange] = useState<string>("Last 30 Days");
 
+  const totalVolumeUSD = transactions.reduce(
+    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    0
+  );
+  const inboundTxs = transactions.filter((t) => t.direction === "Inbound");
+  const outboundTxs = transactions.filter((t) => t.direction === "Outbound");
+  const totalInboundUSD = inboundTxs.reduce(
+    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    0
+  );
+  const totalOutboundUSD = outboundTxs.reduce(
+    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    0
+  );
+
+  const activeCount = customers.filter((c) => c.accountStatus === "Active").length;
+  const pendingCount = customers.filter(
+    (c) => c.verificationStatus === "Pending" || c.accountStatus === "Pending"
+  ).length;
+
   const depositWithdrawalData = [
-    { name: "Week 1", deposits: 48, withdrawals: 28 },
-    { name: "Week 2", deposits: 62, withdrawals: 35 },
-    { name: "Week 3", deposits: 85, withdrawals: 42 },
-    { name: "Week 4", deposits: 93, withdrawals: 35 },
+    { name: "Week 1", deposits: 0, withdrawals: 0 },
+    { name: "Week 2", deposits: 0, withdrawals: 0 },
+    { name: "Week 3", deposits: 0, withdrawals: 0 },
+    {
+      name: "Week 4",
+      deposits: Math.round(totalInboundUSD),
+      withdrawals: Math.round(totalOutboundUSD),
+    },
   ];
 
   const verificationFunnel = [
-    { label: "Submitted KYC", value: "1,240", percent: 100, color: "bg-blue-400" },
-    { label: "Biometric Facial Match", value: "1,180", percent: 95.1, color: "bg-cyan-400" },
-    { label: "Proof of Funds Certified", value: "1,040", percent: 83.8, color: "bg-gold" },
-    { label: "Fully Approved & Issued", value: "982", percent: 79.2, color: "bg-emerald-400" },
+    {
+      label: "Submitted Registration",
+      value: customers.length.toString(),
+      percent: 100,
+      color: "bg-blue-400",
+    },
+    {
+      label: "Identity & Passport KYC",
+      value: customers.filter((c) => c.documents.length > 0).length.toString(),
+      percent:
+        customers.length > 0
+          ? Math.round(
+              (customers.filter((c) => c.documents.length > 0).length / customers.length) * 100
+            )
+          : 0,
+      color: "bg-cyan-400",
+    },
+    {
+      label: "Compliance Verification",
+      value: pendingCount.toString(),
+      percent:
+        customers.length > 0 ? Math.round((pendingCount / customers.length) * 100) : 0,
+      color: "bg-gold",
+    },
+    {
+      label: "Fully Approved & Issued",
+      value: activeCount.toString(),
+      percent:
+        customers.length > 0 ? Math.round((activeCount / customers.length) * 100) : 0,
+      color: "bg-emerald-400",
+    },
   ];
 
   return (
@@ -74,30 +127,42 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
           <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Total Gross Volume</span>
-          <p className="mt-2 text-2xl font-display font-bold text-gold">$428,950,210.00</p>
-          <span className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" /> +14.2% from prior period
+          <p className="mt-2 text-2xl font-display font-bold text-gold">
+            ${totalVolumeUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <span className="mt-1 text-xs text-ivory/60 flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-gold" /> {transactions.length} total transaction{transactions.length === 1 ? "" : "s"}
           </span>
         </div>
 
         <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Inbound Capital Growth</span>
-          <p className="mt-2 text-2xl font-display font-bold text-emerald-400">+$288.4M</p>
-          <span className="mt-1 text-xs text-ivory/60">Across 672 wire transactions</span>
-        </div>
-
-        <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Client Net Retention</span>
-          <p className="mt-2 text-2xl font-display font-bold text-ivory">98.4%</p>
-          <span className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" /> Tier-1 wealth retention
+          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Inbound Capital</span>
+          <p className="mt-2 text-2xl font-display font-bold text-emerald-400">
+            +${totalInboundUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <span className="mt-1 text-xs text-ivory/60">
+            Across {inboundTxs.length} inbound transaction{inboundTxs.length === 1 ? "" : "s"}
           </span>
         </div>
 
         <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Avg KYC Turnaround</span>
-          <p className="mt-2 text-2xl font-display font-bold text-ivory">4.2 Hours</p>
-          <span className="mt-1 text-xs text-emerald-400">38% faster than benchmark</span>
+          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Active Account Rate</span>
+          <p className="mt-2 text-2xl font-display font-bold text-ivory">
+            {customers.length > 0 ? `${Math.round((activeCount / customers.length) * 100)}%` : "0%"}
+          </p>
+          <span className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
+            <ShieldCheck className="h-3 w-3" /> {activeCount} active of {customers.length} total
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
+          <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">KYC Status</span>
+          <p className="mt-2 text-2xl font-display font-bold text-ivory">
+            {pendingCount > 0 ? `${pendingCount} Pending` : "All Verified"}
+          </p>
+          <span className="mt-1 text-xs text-ivory/60">
+            {pendingCount > 0 ? "Awaiting Admin Sign-off" : "Fully verified"}
+          </span>
         </div>
       </div>
 
@@ -138,7 +203,7 @@ export const AnalyticsView: React.FC = () => {
         {/* Chart 2: Deposits vs Withdrawals Breakdown */}
         <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-6 shadow-xl backdrop-blur-md">
           <div className="border-b border-ivory/10 pb-4">
-            <h3 className="text-base font-display font-semibold text-ivory">Deposit vs Withdrawal Activity (USD M)</h3>
+            <h3 className="text-base font-display font-semibold text-ivory">Deposit vs Withdrawal Activity (USD)</h3>
             <p className="text-xs text-ivory/60">Weekly net institutional liquidity balance</p>
           </div>
           <div className="mt-6 h-64 w-full">
@@ -156,8 +221,8 @@ export const AnalyticsView: React.FC = () => {
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
-                <Bar dataKey="deposits" name="Inbound Deposits ($M)" fill="#D4AF6A" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="withdrawals" name="Outbound Wires ($M)" fill="#4B6A9B" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="deposits" name="Inbound Deposits ($)" fill="#D4AF6A" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="withdrawals" name="Outbound Wires ($)" fill="#4B6A9B" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -167,7 +232,7 @@ export const AnalyticsView: React.FC = () => {
       {/* Verification Funnel & Compliance Progress */}
       <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-6 shadow-xl backdrop-blur-md">
         <h3 className="text-base font-display font-semibold text-ivory">Onboarding & Verification Funnel Analysis</h3>
-        <p className="text-xs text-ivory/60 mb-6">Stage-by-stage completion throughput for current reporting cycle</p>
+        <p className="text-xs text-ivory/60 mb-6">Stage-by-stage completion throughput for current registry</p>
 
         <div className="space-y-4">
           {verificationFunnel.map((step) => (

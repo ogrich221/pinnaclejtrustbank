@@ -20,47 +20,56 @@ import { ANALYTICS_TREND_DATA } from "../mockData";
 export const DashboardOverview: React.FC = () => {
   const { customers, transactions, auditLogs, setCurrentView, setSelectedCustomerId } = useAdminData();
 
-  // Metrics computation
-  const totalCustomersCount = customers.length * 1489 + 2; // scaled realistic metric display
+  // Metrics computation from real live state
+  const totalCustomersCount = customers.length;
   const activeAccountsCount = customers.filter((c) => c.accountStatus === "Active").length;
-  const pendingVerificationCount = customers.filter((c) => c.verificationStatus === "Pending").length;
-  const restrictedAccountsCount = customers.filter((c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended").length;
-  const flaggedCount = customers.filter((c) => c.accountStatus === "Flagged").length + transactions.filter((t) => t.status === "Flagged").length;
+  const pendingVerificationCount = customers.filter(
+    (c) => c.verificationStatus === "Pending" || c.accountStatus === "Pending"
+  ).length;
+  const restrictedAccountsCount = customers.filter(
+    (c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended"
+  ).length;
+  const flaggedCount =
+    customers.filter((c) => c.accountStatus === "Flagged").length +
+    transactions.filter((t) => t.status === "Flagged").length;
 
-  const totalVolumeUSD = transactions.reduce((acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1), 0);
+  const totalVolumeUSD = transactions.reduce(
+    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    0
+  );
 
   const kpis = [
     {
       title: "TOTAL CUSTOMERS",
-      value: "14,892",
-      subtext: "+8.4% vs last quarter",
-      trend: "up",
+      value: totalCustomersCount.toLocaleString(),
+      subtext: `${totalCustomersCount} registered account${totalCustomersCount === 1 ? "" : "s"}`,
+      trend: "neutral",
       icon: Users,
       color: "gold",
       onClick: () => setCurrentView("customers"),
     },
     {
       title: "ACTIVE ACCOUNTS",
-      value: "13,420",
-      subtext: "90.1% active institutional rate",
-      trend: "up",
+      value: activeAccountsCount.toLocaleString(),
+      subtext: `${totalCustomersCount > 0 ? Math.round((activeAccountsCount / totalCustomersCount) * 100) : 0}% active rate`,
+      trend: activeAccountsCount > 0 ? "up" : "neutral",
       icon: UserCheck,
       color: "emerald",
       onClick: () => setCurrentView("active-accounts"),
     },
     {
       title: "PENDING VERIFICATION",
-      value: "342",
-      subtext: "KYC queue awaiting review",
-      trend: "neutral",
+      value: pendingVerificationCount.toLocaleString(),
+      subtext: pendingVerificationCount > 0 ? `${pendingVerificationCount} awaiting review` : "No pending verification",
+      trend: pendingVerificationCount > 0 ? "neutral" : "up",
       icon: FileCheck2,
       color: "amber",
       onClick: () => setCurrentView("pending-verification"),
     },
     {
       title: "RESTRICTED ACCOUNTS",
-      value: "48",
-      subtext: "Under compliance hold",
+      value: restrictedAccountsCount.toLocaleString(),
+      subtext: restrictedAccountsCount > 0 ? `${restrictedAccountsCount} on hold` : "No restricted accounts",
       trend: "down",
       icon: Lock,
       color: "red",
@@ -68,8 +77,8 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       title: "TRANSACTION VOLUME",
-      value: "$428.9M",
-      subtext: "+14.2% month-over-month",
+      value: `$${totalVolumeUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtext: `${transactions.length} wire transaction${transactions.length === 1 ? "" : "s"}`,
       trend: "up",
       icon: TrendingUp,
       color: "gold",
@@ -77,9 +86,9 @@ export const DashboardOverview: React.FC = () => {
     },
     {
       title: "FLAGGED ACTIVITIES",
-      value: `${flaggedCount > 0 ? flaggedCount : 16}`,
-      subtext: "Requires authorized sign-off",
-      trend: "alert",
+      value: `${flaggedCount}`,
+      subtext: flaggedCount > 0 ? "Requires authorized sign-off" : "All systems clear",
+      trend: flaggedCount > 0 ? "alert" : "neutral",
       icon: AlertOctagon,
       color: "purple",
       onClick: () => setCurrentView("security"),
@@ -167,7 +176,7 @@ export const DashboardOverview: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-ivory/10 pb-4">
             <div>
               <h2 className="text-lg font-display font-semibold text-ivory">Monthly Liquidity & Volume Flow</h2>
-              <p className="text-xs text-ivory/60">Cross-border clearance volumes in USD millions</p>
+              <p className="text-xs text-ivory/60">Cross-border clearance volumes in USD</p>
             </div>
             <button
               type="button"
@@ -225,40 +234,46 @@ export const DashboardOverview: React.FC = () => {
             </div>
 
             <div className="mt-4 divide-y divide-ivory/10">
-              {transactions.slice(0, 4).map((t) => (
-                <div key={t.id} className="py-3 flex items-center justify-between hover:bg-ivory/5 px-2 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs ${
-                        t.direction === "Inbound"
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-gold/30 bg-gold/10 text-gold"
-                      }`}
-                    >
-                      {t.direction === "Inbound" ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-ivory truncate max-w-[160px]">{t.customerName}</p>
-                      <p className="text-[10px] font-mono text-ivory/50">{t.reference} · {t.type}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p className={`text-xs font-semibold font-mono ${t.direction === "Inbound" ? "text-emerald-400" : "text-ivory"}`}>
-                      {t.direction === "Inbound" ? "+" : "-"}{t.currency} {t.amount.toLocaleString("en-US")}
-                    </p>
-                    <span
-                      className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
-                        t.status === "Settled"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-amber-500/20 text-amber-400"
-                      }`}
-                    >
-                      {t.status}
-                    </span>
-                  </div>
+              {transactions.length === 0 ? (
+                <div className="py-12 text-center text-xs text-ivory/50">
+                  No wire transactions recorded. Clearing network in standby.
                 </div>
-              ))}
+              ) : (
+                transactions.slice(0, 4).map((t) => (
+                  <div key={t.id} className="py-3 flex items-center justify-between hover:bg-ivory/5 px-2 rounded-lg transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs ${
+                          t.direction === "Inbound"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-gold/30 bg-gold/10 text-gold"
+                        }`}
+                      >
+                        {t.direction === "Inbound" ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-ivory truncate max-w-[160px]">{t.customerName}</p>
+                        <p className="text-[10px] font-mono text-ivory/50">{t.reference} · {t.type}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className={`text-xs font-semibold font-mono ${t.direction === "Inbound" ? "text-emerald-400" : "text-ivory"}`}>
+                        {t.direction === "Inbound" ? "+" : "-"}{t.currency} {t.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </p>
+                      <span
+                        className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
+                          t.status === "Settled"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-amber-500/20 text-amber-400"
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

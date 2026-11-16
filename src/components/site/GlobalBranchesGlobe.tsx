@@ -786,204 +786,62 @@ export function GlobalBranchesGlobe() {
           <SpinningDebitCard />
         </div>
 
-        {/* Globe Stage & Active Branch Card Grid */}
-        <div className="mt-14 grid items-center gap-10 lg:grid-cols-12">
-          {/* 3D Canvas Globe (Lg: 7 cols) */}
-          <div className="relative flex flex-col items-center justify-center lg:col-span-7">
-            {/* Interactive Control Pill */}
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 w-full max-w-lg px-3">
-              <div className="flex items-center gap-2 text-xs text-ivory/70">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold"></span>
-                </span>
-                <span>12 Active Branch Beacons</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsRotating(!isRotating)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-ivory/20 bg-navy/70 px-3 py-1 text-xs text-ivory/80 hover:border-gold hover:text-gold transition-colors"
-                  aria-label={isRotating ? "Pause globe rotation" : "Play globe rotation"}
-                >
-                  {isRotating ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                  <span>{isRotating ? "Pause Rotation" : "Auto-Spin"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRotationLng(20);
-                    setTiltLat(15);
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-ivory/20 bg-navy/70 px-3 py-1 text-xs text-ivory/80 hover:border-gold hover:text-gold transition-colors"
-                  aria-label="Reset globe view"
-                >
-                  <RotateCw className="h-3 w-3" />
-                  <span>Reset</span>
-                </button>
-              </div>
+        {/* Centered Globe Stage with Interactive Controls */}
+        <div className="mt-8 flex flex-col items-center justify-center">
+          {/* Interactive Control Pill */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 w-full max-w-lg px-3">
+            <div className="flex items-center gap-2 text-xs text-ivory/70">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold"></span>
+              </span>
+              <span>12 Active Branch Beacons</span>
             </div>
-
-            {/* Canvas Container with Reflective Sheen Styling */}
-            <div className="relative h-[380px] w-full max-w-[480px] sm:h-[460px] sm:max-w-[520px] md:h-[500px] md:max-w-[560px]">
-              <canvas
-                ref={canvasRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onClick={handleCanvasClick}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                className="h-full w-full select-none"
-                style={{ touchAction: "none" }}
-              />
-
-              {/* Instructions Overlay */}
-              <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-ivory/10 bg-navy-deep/80 px-3 py-1 text-[11px] text-ivory/60 backdrop-blur-sm whitespace-nowrap">
-                <Compass className="inline h-3 w-3 mr-1 text-gold" /> Drag to spin globe · Click any blinking dot
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRotating(!isRotating)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ivory/20 bg-navy/70 px-3 py-1 text-xs text-ivory/80 hover:border-gold hover:text-gold transition-colors"
+                aria-label={isRotating ? "Pause globe rotation" : "Play globe rotation"}
+              >
+                {isRotating ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                <span>{isRotating ? "Pause Rotation" : "Auto-Spin"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setRotationLng(20);
+                  setTiltLat(15);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ivory/20 bg-navy/70 px-3 py-1 text-xs text-ivory/80 hover:border-gold hover:text-gold transition-colors"
+                aria-label="Reset globe view"
+              >
+                <RotateCw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
             </div>
           </div>
 
-          {/* Active Branch Inspector (Lg: 5 cols) */}
-          <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-gold/30 bg-navy/80 p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-              {/* Gold accent line */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/20 via-gold to-gold/20" />
+          {/* Canvas Container with Reflective Sheen Styling */}
+          <div className="relative h-[400px] w-full max-w-[520px] sm:h-[480px] sm:max-w-[560px] md:h-[540px] md:max-w-[620px]">
+            <canvas
+              ref={canvasRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onClick={handleCanvasClick}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              className="h-full w-full select-none"
+              style={{ touchAction: "none" }}
+            />
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-xs font-semibold tracking-wider text-emerald-400 uppercase">
-                    Branch Operational · Online
-                  </span>
-                </div>
-                <span className="rounded bg-gold/15 px-2.5 py-1 text-xs font-mono font-medium text-gold border border-gold/30">
-                  {activeBranch.clearanceCode}
-                </span>
-              </div>
-
-              <div className="mt-6">
-                <div className="flex items-baseline gap-2">
-                  <h3 className="text-3xl font-display text-ivory">{activeBranch.city}</h3>
-                  <span className="text-sm text-gold font-medium">{activeBranch.country}</span>
-                </div>
-                <p className="mt-1 text-xs text-ivory/60 uppercase tracking-widest">{activeBranch.region} Region</p>
-                <p className="mt-3 text-sm text-ivory/80 font-medium">{activeBranch.division}</p>
-              </div>
-
-              {/* Live Timezone & Address */}
-              <div className="mt-6 space-y-3 rounded-xl border border-ivory/10 bg-navy-deep/60 p-4 text-xs">
-                <div className="flex items-center justify-between border-b border-ivory/10 pb-2.5">
-                  <span className="flex items-center gap-2 text-ivory/60">
-                    <Clock className="h-3.5 w-3.5 text-gold" /> Local Branch Time:
-                  </span>
-                  <span className="font-mono text-sm font-semibold text-gold">
-                    {getBranchTime(activeBranch.timezone)}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2 pt-1">
-                  <MapPin className="h-3.5 w-3.5 text-gold shrink-0 mt-0.5" />
-                  <span className="text-ivory/80 leading-relaxed">{activeBranch.address}</span>
-                </div>
-              </div>
-
-              {/* Branch Specialized Services */}
-              <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gold mb-2">Specialized Capabilities</p>
-                <div className="flex flex-wrap gap-2">
-                  {activeBranch.features.map((feat) => (
-                    <span
-                      key={feat}
-                      className="inline-flex items-center gap-1 rounded-lg border border-ivory/10 bg-navy-deep px-2.5 py-1 text-[11px] text-ivory/80"
-                    >
-                      <CheckCircle2 className="h-3 w-3 text-gold" />
-                      {feat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  to="/contact"
-                  className="btn-gold flex-1 text-center !py-2.5 !text-xs justify-center"
-                >
-                  Contact {activeBranch.city} Desk
-                </Link>
-                <Link
-                  to="/open-account"
-                  className="btn-outline-light !py-2.5 !text-xs flex items-center justify-center gap-1"
-                >
-                  Open Branch Account <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
+            {/* Instructions Overlay */}
+            <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-ivory/10 bg-navy-deep/80 px-3 py-1 text-[11px] text-ivory/60 backdrop-blur-sm whitespace-nowrap">
+              <Compass className="inline h-3 w-3 mr-1 text-gold" /> Drag to spin globe · Interactive real-time clearance
             </div>
-          </div>
-        </div>
-
-        {/* 12-Branch Interactive Directory Grid */}
-        <div className="mt-16 border-t border-ivory/10 pt-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-display text-ivory">Direct Branch Directory</h3>
-              <p className="text-xs text-ivory/60">Select any branch to center and illuminate its blinking coordinates</p>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-gold">
-              <Building2 className="h-3.5 w-3.5" /> 12 Tier-1 Jurisdictions
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {BRANCH_LOCATIONS.map((b) => {
-              const isActive = b.id === activeBranchId;
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => focusBranch(b)}
-                  className={`group relative flex flex-col rounded-xl border p-3.5 text-left transition-all duration-300 ${
-                    isActive
-                      ? "border-gold bg-gold/15 shadow-lg shadow-gold/10 -translate-y-1"
-                      : "border-ivory/10 bg-navy/60 hover:border-gold/40 hover:bg-navy hover:-translate-y-0.5"
-                  }`}
-                >
-                  {/* Blinking indicator inside card */}
-                  <div className="flex items-center justify-between w-full mb-1.5">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-ivory/50">
-                      {b.region.split("-")[0]}
-                    </span>
-                    <span className="relative flex h-2 w-2">
-                      <span
-                        className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                          isActive ? "bg-gold" : "bg-gold/60"
-                        }`}
-                      ></span>
-                      <span
-                        className={`relative inline-flex rounded-full h-2 w-2 ${
-                          isActive ? "bg-gold" : "bg-gold/80"
-                        }`}
-                      ></span>
-                    </span>
-                  </div>
-
-                  <span className={`text-sm font-semibold tracking-wide ${isActive ? "text-gold" : "text-ivory"}`}>
-                    {b.city}
-                  </span>
-                  <span className="text-[11px] text-ivory/60 truncate">{b.country}</span>
-
-                  <span className="mt-2 text-[10px] font-mono text-gold/90 font-medium">
-                    {getBranchTime(b.timezone)}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>

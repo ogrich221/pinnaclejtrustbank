@@ -16,9 +16,13 @@ import { useAdminData } from "../AdminDataContext";
 import { toast } from "sonner";
 
 export const SecurityAuditView: React.FC = () => {
-  const { auditLogs } = useAdminData();
+  const { auditLogs, customers } = useAdminData();
   const [severityFilter, setSeverityFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const restrictedCount = customers.filter(
+    (c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended"
+  ).length;
 
   const filteredLogs = useMemo(() => {
     return auditLogs.filter((log) => {
@@ -148,7 +152,14 @@ export const SecurityAuditView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-ivory/5 text-ivory">
-              {filteredLogs.map((log) => (
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-xs text-ivory/50">
+                    No security audit logs found matching your filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-white/[0.04] transition-colors">
                   <td className="py-4 pl-6 pr-3 font-mono text-ivory/70 text-[11px]">
                     <p className="font-semibold text-ivory">{log.timestamp}</p>

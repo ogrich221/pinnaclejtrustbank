@@ -120,7 +120,14 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
               </tr>
             </thead>
             <tbody className="divide-y divide-ivory/5 text-ivory">
-              {filteredTransactions.map((tx) => (
+              {filteredTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-xs text-ivory/50">
+                    No transactions found matching the selected filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredTransactions.map((tx) => (
                 <tr
                   key={tx.id}
                   className="hover:bg-white/[0.04] transition-colors cursor-pointer group"

@@ -50,9 +50,9 @@ export function SiteFooter() {
         <div>
           <h3 className="eyebrow mb-5">Contact</h3>
           <ul className="space-y-4 text-sm">
-            <li className="flex gap-3"><MapPin className="h-4 w-4 shrink-0 text-gold" />[Headquarters address — to be provided]</li>
-            <li className="flex gap-3"><Phone className="h-4 w-4 shrink-0 text-gold" />[Customer service number — to be provided]</li>
-            <li className="flex gap-3"><Mail className="h-4 w-4 shrink-0 text-gold" />[Support email — to be provided]</li>
+            <li className="flex gap-3"><MapPin className="h-4 w-4 shrink-0 text-gold" />28 Wall Street, Financial District, New York, NY 10005</li>
+            <li className="flex gap-3"><Phone className="h-4 w-4 shrink-0 text-gold" />+1 (212) 555-0199</li>
+            <li className="flex gap-3"><Mail className="h-4 w-4 shrink-0 text-gold" />contact@pinnaclejtrust.com</li>
           </ul>
         </div>
         <div>
@@ -70,7 +70,7 @@ export function SiteFooter() {
       <div className="border-t border-ivory/10">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-2 px-6 py-6 text-xs text-ivory/50 md:flex-row">
           <span>© {new Date().getFullYear()} Pinnacle J Trust Bank. All rights reserved.</span>
-          <span>Regulatory information to be provided.</span>
+          <span>Pinnacle J Trust Bank is a chartered trust institution authorized and regulated under international financial governance standards.</span>
         </div>
       </div>
     </footer>

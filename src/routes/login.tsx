@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, Lock, ShieldCheck, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, AlertCircle } from "lucide-react";
 import hero from "@/assets/hq-hero.jpg";
 import { Logo } from "@/components/site/Logo";
 import { Field } from "@/components/site/Field";
@@ -37,7 +37,7 @@ function Login() {
     setTimeout(() => {
       setBusy(false);
             try {
-        const stored = localStorage.getItem("pjtb_admin_customers_v2");
+        const stored = localStorage.getItem("pjtb_admin_customers_v3") || localStorage.getItem("pjtb_admin_customers_v2");
         if (stored) {
           const customers = JSON.parse(stored);
           const found = customers.find((c: any) =>
@@ -91,11 +91,6 @@ function Login() {
             <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-gold" /> Never share your password or verification codes with anyone.</p>
             <p className="mt-8 text-sm text-muted-foreground">New to Pinnacle J? <Link to="/open-account" className="font-semibold text-navy underline-offset-4 hover:underline">Open an account</Link></p>
             <Link to="/" className="mt-3 inline-block text-sm text-muted-foreground hover:text-navy">← Back to home</Link>
-            <div className="mt-8 border-t border-border/80 pt-4">
-              <Link to="/admin" className="text-xs font-semibold text-gold tracking-wide hover:underline flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-gold" /> Authorized Staff? Access Admin Command Centre →
-              </Link>
-            </div>
           </div>
         </div>
       </div>
