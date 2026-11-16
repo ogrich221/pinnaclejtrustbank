@@ -374,10 +374,9 @@ export const OpenAccountWizard: React.FC = () => {
         const storedNotifs = localStorage.getItem(notifKey);
         const notifs = storedNotifs ? JSON.parse(storedNotifs) : [];
         notifs.unshift({
-          id: 
-otif-,
-          title: New Application: ,
-          message: ${newCustomer.fullName} registered for  (). Opening balance: 0.00. Awaiting administrator approval.,
+          id: `notif-${Date.now()}`,
+          title: `New Application: ${newCustomer.fullName}`,
+          message: `${newCustomer.fullName} registered for ${newCustomer.accountType} (${newCustomer.currency}). Opening balance: 0.00. Awaiting administrator approval.`,
           timestamp: "Just now",
           read: false,
           severity: "Info",
