@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Lock, ShieldCheck, AlertCircle } from "lucide-react";
 import hero from "@/assets/hq-hero.jpg";
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
+  const navigate = useNavigate();
   const [v, setV] = useState({ username: "", password: "" });
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
