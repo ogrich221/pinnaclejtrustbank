@@ -11,6 +11,7 @@ import {
   Eye,
   Building,
   RefreshCw,
+  Edit,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { TransactionRecord, TransactionType, TransactionStatus } from "../types";
@@ -234,7 +235,7 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

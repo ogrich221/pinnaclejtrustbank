@@ -25,9 +25,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const { editTransaction } = useAdminData();
 
   const [date, setDate] = useState<string>(() => {
-    if (!transaction) return new Date().toISOString().split("T")[0];
+    if (!transaction) return new Date().toISOString().slice(0, 10);
     const parts = transaction.timestamp.split(" ");
-    return parts[0] || new Date().toISOString().split("T")[0];
+    return parts[0] || new Date().toISOString().slice(0, 10);
   });
 
   const [time, setTime] = useState<string>(() => {
@@ -57,7 +57,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       purpose: purpose.trim(),
       narration: purpose.trim(),
       status,
-      counterparty: counterparty.trim() || undefined,
+      ...(counterparty.trim() ? { counterparty: counterparty.trim() } : {}),
       category,
     });
 

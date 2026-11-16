@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, ShieldCheck, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, AlertCircle, Lock } from "lucide-react";
 import hero from "@/assets/hq-hero.jpg";
 import { Logo } from "@/components/site/Logo";
 import { Field } from "@/components/site/Field";

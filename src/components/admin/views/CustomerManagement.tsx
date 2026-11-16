@@ -16,6 +16,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   Plus,
+  DollarSign,
+  PlusCircle,
+  MinusCircle,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { CustomerRecord, CustomerAccountStatus, VerificationStatus } from "../types";
