@@ -36,7 +36,7 @@ function OpenAccount() {
   const next = (e: FormEvent) => {
     e.preventDefault();
     if (step < 3) {
-      const r = stepSchemas[step].safeParse(v);
+      const r = stepSchemas[step as 0 | 1 | 2].safeParse(v);
       if (!r.success) return setErrors(toErrors(r.error));
       setErrors({}); setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
