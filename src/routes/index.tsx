@@ -92,9 +92,9 @@ function Index() {
             </div>
           ))}
         </div>
+      </div>
       </section>
 
-      </div>
       {/* SERVICES */}
       <section id="services" className="relative scroll-mt-8 overflow-hidden bg-navy py-28">
         <div className="mx-auto max-w-7xl px-6">
