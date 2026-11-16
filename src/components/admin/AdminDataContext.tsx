@@ -3,7 +3,7 @@ import {
   CustomerRecord,
   TransactionRecord,
   AuditLogEntry,
-  StaffMember,
+  AdministratorProfile,
   SystemNotification,
   CustomerAccountStatus,
   VerificationStatus,
@@ -13,7 +13,7 @@ import {
   INITIAL_CUSTOMERS,
   INITIAL_TRANSACTIONS,
   INITIAL_AUDIT_LOGS,
-  INITIAL_STAFF,
+  INITIAL_ADMIN,
   INITIAL_NOTIFICATIONS,
 } from "./mockData";
 import { toast } from "sonner";
@@ -31,8 +31,7 @@ export type AdminViewId =
   | "withdrawals"
   | "transfers"
   | "payment-history"
-  | "permissions"
-  | "staff"
+  | "admin-profile"
   | "activity-logs"
   | "security"
   | "notifications"
@@ -43,7 +42,7 @@ interface AdminDataContextType {
   customers: CustomerRecord[];
   transactions: TransactionRecord[];
   auditLogs: AuditLogEntry[];
-  staff: StaffMember[];
+  admin: AdministratorProfile;
   notifications: SystemNotification[];
   currentView: AdminViewId;
   setCurrentView: (view: AdminViewId) => void;
@@ -70,18 +69,17 @@ interface AdminDataContextType {
   editCustomerDetails: (customerId: string, details: Partial<CustomerRecord>) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
-  activeAdmin: StaffMember;
+  activeAdmin: AdministratorProfile;
   resetToDefaults: () => void;
 }
 
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  CUSTOMERS: "pjtb_admin_customers_v1",
-  TRANSACTIONS: "pjtb_admin_transactions_v1",
-  AUDIT_LOGS: "pjtb_admin_audit_logs_v1",
-  STAFF: "pjtb_admin_staff_v1",
-  NOTIFICATIONS: "pjtb_admin_notifications_v1",
+  CUSTOMERS: "pjtb_admin_customers_v2",
+  TRANSACTIONS: "pjtb_admin_transactions_v2",
+  AUDIT_LOGS: "pjtb_admin_audit_logs_v2",
+  NOTIFICATIONS: "pjtb_admin_notifications_v2",
 };
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -112,15 +110,6 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
-  const [staff, setStaff] = useState<StaffMember[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.STAFF);
-      return saved ? JSON.parse(saved) : INITIAL_STAFF;
-    } catch {
-      return INITIAL_STAFF;
-    }
-  });
-
   const [notifications, setNotifications] = useState<SystemNotification[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
@@ -135,7 +124,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>("");
 
-  const activeAdmin = staff[0]; // Alexander Vance, Super Admin
+  const activeAdmin: AdministratorProfile = INITIAL_ADMIN;
 
   // Persistence
   useEffect(() => {
@@ -179,7 +168,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       targetId,
       targetDescription,
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-      ipAddress: "10.14.0.52 (Admin Console)",
+      ipAddress: activeAdmin.sessionIp,
       reason,
       note,
       severity,
@@ -367,7 +356,6 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCustomers(INITIAL_CUSTOMERS);
     setTransactions(INITIAL_TRANSACTIONS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
-    setStaff(INITIAL_STAFF);
     setNotifications(INITIAL_NOTIFICATIONS);
     localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
     localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
@@ -381,7 +369,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         customers,
         transactions,
         auditLogs,
-        staff,
+        admin: activeAdmin,
         notifications,
         currentView,
         setCurrentView,

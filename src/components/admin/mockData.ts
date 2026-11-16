@@ -2,9 +2,31 @@ import {
   CustomerRecord,
   TransactionRecord,
   AuditLogEntry,
-  StaffMember,
+  AdministratorProfile,
   SystemNotification,
 } from "./types";
+
+export const INITIAL_ADMIN: AdministratorProfile = {
+  id: "admin-master",
+  name: "Administrator",
+  email: "admin@pinnaclejtrust.com",
+  role: "Administrator",
+  title: "Sole Bank Administrator",
+  department: "Executive Banking & Operational Governance",
+  status: "Active",
+  mfaEnabled: true,
+  lastActive: "Active Session",
+  sessionIp: "10.14.0.52 (Dedicated Secure Bastion)",
+  permissions: {
+    fullSystemControl: true,
+    customerManagement: true,
+    transactionClearing: true,
+    accountRestriction: true,
+    kycVerification: true,
+    auditLogging: true,
+    securityOverrides: true,
+  },
+};
 
 export const INITIAL_CUSTOMERS: CustomerRecord[] = [
   {
@@ -35,8 +57,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-1",
-        authorName: "Eleanor Sterling",
-        authorRole: "Private Wealth Partner",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-10-12 14:20",
         content: "Client confirmed asset allocation shift towards Zurich custody facility. Approved via senior trust committee.",
         category: "Compliance",
@@ -111,8 +133,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-2",
-        authorName: "Marcus Vance",
-        authorRole: "Compliance Officer",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-08-19 11:00",
         content: "Beneficial ownership structure verified under Swiss FINMA directives. All corporate entity signatories validated.",
         category: "Compliance",
@@ -169,8 +191,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-3",
-        authorName: "Alexander Vance",
-        authorRole: "Super Admin",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-06-10 16:40",
         content: "Multi-currency clearing line approved for APAC market making. Daily liquidity buffer monitored.",
         category: "Security",
@@ -227,8 +249,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-4",
-        authorName: "Sophia Al-Maktoum",
-        authorRole: "Compliance Officer",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-11-14 20:10",
         content: "ACCOUNT RESTRICTED: Inbound wire of $3.4M flagged by OFAC automated screening for cross-border beneficiary clarification. Outbound transfers temporarily blocked pending signed declaration.",
         category: "Compliance",
@@ -285,8 +307,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-5",
-        authorName: "System KYC Engine",
-        authorRole: "Automated Compliance",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-11-12 10:05",
         content: "New registration received. Passport uploaded and facial biometric verified. Utility bill proof of address pending human compliance sign-off.",
         category: "Compliance",
@@ -352,8 +374,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-6",
-        authorName: "Alexander Vance",
-        authorRole: "Super Admin",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-09-01 10:00",
         content: "Tier-1 institutional relationship reviewed. Fedwire and SWIFT GPI direct rails active.",
         category: "General",
@@ -410,8 +432,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-7",
-        authorName: "Marcus Vance",
-        authorRole: "Compliance Officer",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-11-11 09:30",
         content: "ACCOUNT SUSPENDED: Forged consular stamp identified on notarized proof of funds document during forensic analysis. Account frozen and regulatory escalation filed.",
         category: "Audit",
@@ -468,8 +490,8 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-8",
-        authorName: "Kenji Sato",
-        authorRole: "Bank Administrator",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-10-01 09:00",
         content: "Tokyo branch onboarding complete. High-volume yen-dollar dual-currency settlement enabled.",
         category: "General",
@@ -575,10 +597,10 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     notes: [
       {
         id: "note-10",
-        authorName: "Marcus Vance",
-        authorRole: "Compliance Officer",
+        authorName: "Administrator",
+        authorRole: "Administrator",
         timestamp: "2026-11-16 07:45",
-        content: "FLAGGED: Significant velocity increase: three $5M outbound wires scheduled within 45 minutes to new Swiss counterparty. Second-level executive authorization required before release.",
+        content: "FLAGGED: Significant velocity increase: three $5M outbound wires scheduled within 45 minutes to new Swiss counterparty. Administrative authorization required before release.",
         category: "Security",
       },
     ],
@@ -652,7 +674,7 @@ export const INITIAL_TRANSACTIONS: TransactionRecord[] = [
     purpose: "Institutional Liquidity Settlement",
     timeline: [
       { stage: "Corporate API Instruction", timestamp: "08:18:10", status: "Completed" },
-      { stage: "Dual-Key Authorized", timestamp: "08:19:05", status: "Completed" },
+      { stage: "Authorized by Administrator", timestamp: "08:19:05", status: "Completed" },
       { stage: "SWIFT GPI Broadcasted", timestamp: "08:20:00", status: "Completed" },
     ],
   },
@@ -677,7 +699,7 @@ export const INITIAL_TRANSACTIONS: TransactionRecord[] = [
     timeline: [
       { stage: "Inbound Wire Received", timestamp: "07:44:19", status: "Completed" },
       { stage: "Automated AML Velocity Trigger", timestamp: "07:44:20", status: "Flagged", note: "Beneficiary restricted; held in compliance suspense buffer." },
-      { stage: "Compliance Officer Manual Review", timestamp: "Pending", status: "Pending" },
+      { stage: "Administrator Review Pending", timestamp: "Pending", status: "Pending" },
     ],
   },
   {
@@ -747,7 +769,7 @@ export const INITIAL_TRANSACTIONS: TransactionRecord[] = [
     timeline: [
       { stage: "Wire Instruction Submitted", timestamp: "07:11:00", status: "Completed" },
       { stage: "Velocity Anomaly Filter Flagged", timestamp: "07:12:00", status: "Flagged", note: "3rd consecutive high-value transaction in 45m" },
-      { stage: "Awaiting Dual Senior Admin Release", timestamp: "Pending", status: "Pending" },
+      { stage: "Awaiting Administrator Release", timestamp: "Pending", status: "Pending" },
     ],
   },
 ];
@@ -755,46 +777,46 @@ export const INITIAL_TRANSACTIONS: TransactionRecord[] = [
 export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   {
     id: "audit-1",
-    adminName: "Alexander Vance",
-    adminRole: "Super Admin",
+    adminName: "Administrator",
+    adminRole: "Administrator",
     action: "RESTRICT_ACCOUNT",
     targetId: "PJ-89204",
     targetDescription: "Customer: Viktor V. Markov",
     timestamp: "2026-11-14 20:10:04",
-    ipAddress: "10.14.0.52 (Internal Secure Bastion)",
+    ipAddress: "10.14.0.52 (Dedicated Secure Bastion)",
     reason: "OFAC automated screening anomaly on inbound wire",
     note: "All outbound transfers frozen pending compliance review.",
     severity: "Critical",
   },
   {
     id: "audit-2",
-    adminName: "Marcus Vance",
-    adminRole: "Compliance Officer",
+    adminName: "Administrator",
+    adminRole: "Administrator",
     action: "SUSPEND_ACCOUNT",
     targetId: "PJ-89207",
     targetDescription: "Customer: Dmitri O. Belov",
     timestamp: "2026-11-11 09:30:18",
-    ipAddress: "10.14.0.88",
+    ipAddress: "10.14.0.52",
     reason: "Fraudulent notary seal identified on consular document",
     note: "File escalated to European Financial Intelligence Unit.",
     severity: "Critical",
   },
   {
     id: "audit-3",
-    adminName: "Eleanor Sterling",
-    adminRole: "Bank Administrator",
+    adminName: "Administrator",
+    adminRole: "Administrator",
     action: "APPROVE_VERIFICATION",
     targetId: "PJ-89209",
     targetDescription: "Customer: Claire D. Beauchamp",
     timestamp: "2026-11-01 11:22:45",
-    ipAddress: "10.14.1.12",
+    ipAddress: "10.14.0.52",
     reason: "Tier-1 KYC document set verified against French Registry",
     severity: "Info",
   },
   {
     id: "audit-4",
-    adminName: "Alexander Vance",
-    adminRole: "Super Admin",
+    adminName: "Administrator",
+    adminRole: "Administrator",
     action: "MODIFY_TRANSFER_LIMIT",
     targetId: "PJ-89206",
     targetDescription: "Customer: AeroTech Apex Global Corp",
@@ -805,113 +827,15 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   },
   {
     id: "audit-5",
-    adminName: "Kenji Sato",
-    adminRole: "Bank Administrator",
+    adminName: "Administrator",
+    adminRole: "Administrator",
     action: "ADD_ADMIN_NOTE",
     targetId: "PJ-89208",
     targetDescription: "Customer: Kenjiro Takahashi",
     timestamp: "2026-10-01 09:00:11",
-    ipAddress: "10.14.2.04",
+    ipAddress: "10.14.0.52",
     reason: "Documented Tokyo Branch dual-currency setup",
     severity: "Info",
-  },
-];
-
-export const INITIAL_STAFF: StaffMember[] = [
-  {
-    id: "staff-1",
-    name: "Alexander Vance",
-    email: "a.vance@pinnaclejtrust.com",
-    role: "Super Admin",
-    department: "Executive Management & Security",
-    status: "Active",
-    mfaEnabled: true,
-    lastActive: "Just now",
-    permissions: {
-      canViewCustomers: true,
-      canEditCustomers: true,
-      canReviewKYC: true,
-      canRestrictAccounts: true,
-      canViewTransactions: true,
-      canReviewAlerts: true,
-      canManageStaff: true,
-    },
-  },
-  {
-    id: "staff-2",
-    name: "Marcus Vance",
-    email: "m.vance@pinnaclejtrust.com",
-    role: "Compliance Officer",
-    department: "Global AML & Sanctions Oversight",
-    status: "Active",
-    mfaEnabled: true,
-    lastActive: "12 minutes ago",
-    permissions: {
-      canViewCustomers: true,
-      canEditCustomers: false,
-      canReviewKYC: true,
-      canRestrictAccounts: true,
-      canViewTransactions: true,
-      canReviewAlerts: true,
-      canManageStaff: false,
-    },
-  },
-  {
-    id: "staff-3",
-    name: "Eleanor Sterling",
-    email: "e.sterling@pinnaclejtrust.com",
-    role: "Bank Administrator",
-    department: "Private Wealth Operations",
-    status: "Active",
-    mfaEnabled: true,
-    lastActive: "45 minutes ago",
-    permissions: {
-      canViewCustomers: true,
-      canEditCustomers: true,
-      canReviewKYC: true,
-      canRestrictAccounts: false,
-      canViewTransactions: true,
-      canReviewAlerts: true,
-      canManageStaff: false,
-    },
-  },
-  {
-    id: "staff-4",
-    name: "Kenji Sato",
-    email: "k.sato@pinnaclejtrust.com",
-    role: "Bank Administrator",
-    department: "Asia-Pacific Regional Operations",
-    status: "Active",
-    mfaEnabled: true,
-    lastActive: "2 hours ago",
-    permissions: {
-      canViewCustomers: true,
-      canEditCustomers: true,
-      canReviewKYC: true,
-      canRestrictAccounts: false,
-      canViewTransactions: true,
-      canReviewAlerts: true,
-      canManageStaff: false,
-    },
-  },
-  {
-    id: "staff-5",
-    name: "Seraphina Dupont",
-    email: "s.dupont@pinnaclejtrust.com",
-    role: "Auditor",
-    department: "Internal Audit & Risk Governance",
-    status: "Active",
-    mfaEnabled: true,
-    lastActive: "Yesterday",
-    permissions: {
-      canViewCustomers: true,
-      canEditCustomers: false,
-      canReviewKYC: false,
-      canRestrictAccounts: false,
-      canViewTransactions: true,
-      canReviewAlerts: true,
-      canManageStaff: false,
-    },
   },
 ];
 
@@ -949,7 +873,7 @@ export const INITIAL_NOTIFICATIONS: SystemNotification[] = [
   {
     id: "notif-4",
     title: "Account Restricted",
-    message: "Viktor V. Markov (PJ-89204) placed on administrative restriction by Sophia Al-Maktoum.",
+    message: "Viktor V. Markov (PJ-89204) placed on administrative restriction.",
     timestamp: "1d ago",
     category: "Compliance",
     severity: "Warning",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   BarChart3,
@@ -14,7 +14,6 @@ import {
   ArrowLeftRight,
   History,
   ShieldCheck,
-  UserCog,
   FileText,
   ShieldAlert,
   Bell,
@@ -28,7 +27,7 @@ import {
   ExternalLink,
   RotateCcw,
   Clock,
-  Sparkles,
+  User,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
 import { useAdminData, AdminViewId } from "./AdminDataContext";
@@ -37,9 +36,8 @@ import { CustomerManagement } from "./views/CustomerManagement";
 import { TransactionMonitoring } from "./views/TransactionMonitoring";
 import { AnalyticsView } from "./views/AnalyticsView";
 import { SecurityAuditView } from "./views/SecurityAuditView";
-import { StaffPermissionsView } from "./views/StaffPermissionsView";
+import { AdministratorProfileView } from "./views/AdministratorProfileView";
 import { NotificationsDrawer } from "./views/NotificationsDrawer";
-import { toast } from "sonner";
 
 export const AdminLayout: React.FC = () => {
   const {
@@ -59,7 +57,6 @@ export const AdminLayout: React.FC = () => {
 
   const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
 
-  // Dynamic dynamic clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -115,8 +112,7 @@ export const AdminLayout: React.FC = () => {
     {
       section: "ADMINISTRATION",
       items: [
-        { id: "permissions", label: "User Permissions", icon: ShieldCheck },
-        { id: "staff", label: "Staff Management", icon: UserCog },
+        { id: "admin-profile", label: "Administrator Profile", icon: ShieldCheck },
         { id: "activity-logs", label: "Activity Logs", icon: FileText },
         { id: "security", label: "Security Center", icon: ShieldAlert },
       ],
@@ -143,7 +139,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#071426] text-[#F5F7FA] font-sans flex antialiased overflow-x-hidden selection:bg-gold/30 selection:text-gold">
-      {/* SIDEBAR NAVIGATION (Desktop: Fixed 72, Mobile: Drawer) */}
+      {/* SIDEBAR NAVIGATION */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-ivory/10 bg-gradient-to-b from-[#0C1B30]/95 via-[#071426]/95 to-[#0C1B30]/95 backdrop-blur-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col justify-between ${
           sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
@@ -164,7 +160,7 @@ export const AdminLayout: React.FC = () => {
                   TRUST BANK
                 </span>
                 <span className="block text-[8px] font-mono tracking-widest text-ivory/40 uppercase mt-0.5">
-                  Admin Platform
+                  Single Admin Mode
                 </span>
               </div>
             </Link>
@@ -178,7 +174,7 @@ export const AdminLayout: React.FC = () => {
             </button>
           </div>
 
-          {/* Navigation Links Scrollable Body */}
+          {/* Navigation Links */}
           <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6 scrollbar-thin text-xs" aria-label="Admin Navigation">
             {navSections.map((sec) => (
               <div key={sec.section}>
@@ -233,7 +229,7 @@ export const AdminLayout: React.FC = () => {
             ))}
           </nav>
 
-          {/* Sidebar Footer Link to Public Website */}
+          {/* Sidebar Footer Link */}
           <div className="border-t border-ivory/10 p-4 bg-navy-deep/60">
             <Link
               to="/"
@@ -254,11 +250,11 @@ export const AdminLayout: React.FC = () => {
         />
       )}
 
-      {/* MAIN VIEWPORT (Offset by 72 on desktop) */}
+      {/* MAIN VIEWPORT */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
         {/* TOP TRANSPARENT GLASS NAVIGATION BAR */}
         <header className="sticky top-0 z-20 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between gap-4">
-          {/* Left: Mobile Toggle & Breadcrumbs */}
+          {/* Left: Title & Breadcrumbs */}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -281,15 +277,13 @@ export const AdminLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Dynamic Clock, Search, Notification, Profile */}
+          {/* Right: Clock, Search, Notification, Profile */}
           <div className="flex items-center gap-4">
-            {/* Live UTC Clock */}
             <div className="hidden xl:flex items-center gap-2 text-xs font-mono text-ivory/60 bg-white/[0.03] border border-ivory/10 px-3 py-1.5 rounded-full">
               <Clock className="h-3.5 w-3.5 text-gold" />
               <span>{currentTimeStr || "Syncing clearing time..."}</span>
             </div>
 
-            {/* Global Search Bar */}
             <div className="hidden sm:block relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ivory/40" />
               <input
@@ -316,7 +310,7 @@ export const AdminLayout: React.FC = () => {
               )}
             </button>
 
-            {/* Quick Demo Reset Button */}
+            {/* Quick Demo Reset */}
             <button
               type="button"
               onClick={resetToDefaults}
@@ -326,7 +320,7 @@ export const AdminLayout: React.FC = () => {
               <RotateCcw className="h-4 w-4" />
             </button>
 
-            {/* Administrator Profile Dropdown */}
+            {/* Sole Administrator Profile Dropdown */}
             <div className="relative">
               <button
                 type="button"
@@ -334,7 +328,7 @@ export const AdminLayout: React.FC = () => {
                 className="flex items-center gap-3 rounded-full border border-gold/30 bg-white/[0.04] pl-2 pr-3 py-1 text-xs hover:border-gold transition-colors backdrop-blur-md"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gold text-xs font-bold text-navy-deep font-display">
-                  AV
+                  AD
                 </div>
                 <div className="hidden sm:block text-left leading-tight">
                   <p className="font-semibold text-ivory text-xs">{activeAdmin.name}</p>
@@ -354,12 +348,12 @@ export const AdminLayout: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setCurrentView("staff");
+                        setCurrentView("admin-profile");
                         setProfileDropdownOpen(false);
                       }}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-ivory/80 hover:bg-ivory/10"
                     >
-                      <UserCog className="h-3.5 w-3.5 text-gold" /> My Profile & Privileges
+                      <User className="h-3.5 w-3.5 text-gold" /> Administrator Profile
                     </button>
                     <button
                       type="button"
@@ -369,7 +363,7 @@ export const AdminLayout: React.FC = () => {
                       }}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-ivory/80 hover:bg-ivory/10"
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Security Settings
+                      <ShieldAlert className="h-3.5 w-3.5 text-gold" /> Security Center
                     </button>
                   </div>
                   <div className="border-t border-ivory/10 pt-1">
@@ -432,7 +426,7 @@ export const AdminLayout: React.FC = () => {
 
           {(currentView === "security" || currentView === "activity-logs") && <SecurityAuditView />}
 
-          {(currentView === "permissions" || currentView === "staff") && <StaffPermissionsView />}
+          {currentView === "admin-profile" && <AdministratorProfileView />}
 
           {/* Simple Settings / Support panels */}
           {currentView === "settings" && (
@@ -445,8 +439,8 @@ export const AdminLayout: React.FC = () => {
                   <p className="text-ivory/70 mt-1">Continuous synchronization enabled with SDN Delta feeds</p>
                 </div>
                 <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
-                  <p className="font-semibold text-gold">Multi-Signature Requirement</p>
-                  <p className="text-ivory/70 mt-1">Transfers exceeding $10,000,000.00 require dual-officer signoff</p>
+                  <p className="font-semibold text-gold">Administrator Authority</p>
+                  <p className="text-ivory/70 mt-1">Single Administrator holds universal signoff authority</p>
                 </div>
               </div>
             </div>

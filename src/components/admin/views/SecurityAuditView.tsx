@@ -88,7 +88,7 @@ export const SecurityAuditView: React.FC = () => {
             <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Active Admin Sessions</span>
             <Server className="h-4 w-4 text-gold" />
           </div>
-          <p className="mt-2 text-2xl font-display font-bold text-ivory">3 Authorized Staff</p>
+          <p className="mt-2 text-2xl font-display font-bold text-ivory">1 Sole Administrator</p>
           <p className="mt-1 text-xs text-ivory/60 font-mono">Mutual TLS & Hardware YubiKey</p>
         </div>
 

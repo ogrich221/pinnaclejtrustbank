@@ -84,7 +84,7 @@ export type RiskLevel = "Low" | "Medium" | "High" | "Critical";
 
 export interface TransactionRecord {
   id: string;
-  reference: string; // e.g., "TX-2026-99201"
+  reference: string;
   customerId: string;
   customerName: string;
   type: TransactionType;
@@ -93,12 +93,12 @@ export interface TransactionRecord {
   direction: "Inbound" | "Outbound";
   timestamp: string;
   status: TransactionStatus;
-  riskScore: number; // 0 - 100
+  riskScore: number;
   riskLevel: RiskLevel;
   originatingBank: string;
   beneficiaryName: string;
   beneficiaryAccount: string;
-  clearingRoute: string; // e.g. "CHIPS / SWIFT FIN"
+  clearingRoute: string;
   purpose: string;
   timeline: {
     stage: string;
@@ -133,30 +133,28 @@ export interface AuditLogEntry {
   severity: "Info" | "Warning" | "Critical";
 }
 
-export type AdminRole =
-  | "Super Admin"
-  | "Bank Administrator"
-  | "Compliance Officer"
-  | "Customer Support"
-  | "Auditor";
+// Single Administrator Model
+export type AdminRole = "Administrator";
 
-export interface StaffMember {
+export interface AdministratorProfile {
   id: string;
   name: string;
   email: string;
   role: AdminRole;
+  title: string;
   department: string;
-  status: "Active" | "Inactive";
+  status: "Active";
   mfaEnabled: boolean;
   lastActive: string;
+  sessionIp: string;
   permissions: {
-    canViewCustomers: boolean;
-    canEditCustomers: boolean;
-    canReviewKYC: boolean;
-    canRestrictAccounts: boolean;
-    canViewTransactions: boolean;
-    canReviewAlerts: boolean;
-    canManageStaff: boolean;
+    fullSystemControl: boolean;
+    customerManagement: boolean;
+    transactionClearing: boolean;
+    accountRestriction: boolean;
+    kycVerification: boolean;
+    auditLogging: boolean;
+    securityOverrides: boolean;
   };
 }
 
