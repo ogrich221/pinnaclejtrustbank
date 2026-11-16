@@ -392,7 +392,7 @@ export const OpenAccountWizard: React.FC = () => {
         const storedLogs = localStorage.getItem(auditKey);
         const logs = storedLogs ? JSON.parse(storedLogs) : [];
         logs.unshift({
-          id: udit-,
+          id: `audit-${Date.now()}`,
           timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
           adminName: "Registration Gateway",
           adminEmail: "gateway@pinnaclejtrust.com",
