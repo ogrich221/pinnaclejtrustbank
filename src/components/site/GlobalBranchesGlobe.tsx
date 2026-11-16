@@ -707,7 +707,7 @@ export function GlobalBranchesGlobe() {
       setIsDragging(true);
       targetRotationRef.current = null;
       setDragStart({
-        x: e.touches[0].clientX,
+        x: e.touches[0]!.clientX,
         y: e.touches[0].clientY,
         rot: rotationLng,
         tilt: tiltLat,
@@ -717,7 +717,7 @@ export function GlobalBranchesGlobe() {
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (isDragging && e.touches.length === 1) {
-      const dx = e.touches[0].clientX - dragStart.x;
+      const dx = e.touches[0]!.clientX - dragStart.x;
       const dy = e.touches[0].clientY - dragStart.y;
       setRotationLng((dragStart.rot - dx * 0.4 + 360) % 360);
       setTiltLat(Math.max(-35, Math.min(45, dragStart.tilt + dy * 0.3)));
