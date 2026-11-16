@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  CheckCircle2,
   Plus,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";

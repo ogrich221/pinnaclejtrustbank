@@ -226,7 +226,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
       ipAddress: activeAdmin.sessionIp,
       reason,
-      note,
+      ...(note !== undefined ? { note } : {}),
       severity,
     };
     setAuditLogs((prev) => [newEntry, ...prev]);

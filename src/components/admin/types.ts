@@ -123,7 +123,8 @@ export interface AuditLogEntry {
     | "ADD_ADMIN_NOTE"
     | "MODIFY_TRANSFER_LIMIT"
     | "SYSTEM_CONFIG_CHANGE"
-    | "SECURITY_OVERRIDE";
+    | "SECURITY_OVERRIDE"
+    | "ACCOUNT_APPROVED";
   targetId: string;
   targetDescription: string;
   timestamp: string;
