@@ -60,7 +60,7 @@ function Index() {
         <div className="absolute inset-0 bg-overlay-side" />
         <SiteHeader overlay />
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl items-center px-6 pt-24">
-          <div className="max-w-2xl animate-rise glass-dark rounded-3xl p-8 sm:p-12">
+          <div className="max-w-2xl animate-rise">
             <p className="eyebrow">Pinnacle J Trust Bank</p>
             <h1 className="mt-6 text-5xl leading-[1.02] text-ivory sm:text-6xl lg:text-7xl">
               Your Financial Future.<br /><em className="text-gold">Our Pinnacle.</em>
