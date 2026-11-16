@@ -35,9 +35,10 @@ export const stepSchemas = [
   }),
 ] as const;
 
-export type FieldErrors = Record<string, string>;
+type Keys = "username" | "password" | "name" | "email" | "subject" | "message" | "accountType" | "firstName" | "lastName" | "dob" | "phone" | "address" | "country" | "idType" | "idNumber" | "idExpiry" | "consent";
+export type FieldErrors = Partial<Record<Keys, string>>;
 export function toErrors(err: z.ZodError): FieldErrors {
-  const out: FieldErrors = {};
+  const out: Record<string, string> = {};
   for (const i of err.issues) { const k = String(i.path[0]); if (!out[k]) out[k] = i.message; }
-  return out;
+  return out as FieldErrors;
 }

@@ -30,7 +30,7 @@ function OpenAccount() {
   const [done, setDone] = useState<string | null>(null);
   const set = (k: keyof typeof empty) => (e: { target: { value: string } }) => setV({ ...v, [k]: e.target.value });
   const inp = (k: keyof typeof empty, type = "text", ac?: string) => (
-    <input id={k} type={type} autoComplete={ac} className="field" value={v[k] as string} onChange={set(k)} aria-invalid={!!errors[k]} aria-describedby={errors[k] ? `${k}-err` : undefined} />
+    <input id={k} type={type} autoComplete={ac} className="field" value={v[k] as string} onChange={set(k)} aria-invalid={!!errors[k as keyof FieldErrors]} aria-describedby={errors[k as keyof FieldErrors] ? `${k}-err` : undefined} />
   );
 
   const next = (e: FormEvent) => {
