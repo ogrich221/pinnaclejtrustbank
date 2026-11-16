@@ -79,6 +79,8 @@ interface AdminDataContextType {
   markAllNotificationsRead: () => void;
   activeAdmin: AdministratorProfile;
   approveCustomerAccount: (customerId: string, reason?: string) => void;
+  creditDebitCustomer: (params: CreditDebitParams) => void;
+  editTransaction: (params: EditTransactionParams) => void;
   resetToDefaults: () => void;
 }
 
@@ -482,6 +484,178 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
+
+  const creditDebitCustomer = (params: CreditDebitParams) => {
+    const target = customers.find((c) => c.id === params.customerId);
+    if (!target) return;
+
+    const amt = Math.abs(params.amount);
+    const isCredit = params.type === "Credit";
+    const delta = isCredit ? amt : -amt;
+
+    const newBalance = Math.max(0, (target.balance || 0) + delta);
+    const newAvail = Math.max(0, (target.availableBalance || 0) + delta);
+    const timestampStr = `${params.date} ${params.time}`;
+
+    setCustomers((prev) =>
+      prev.map((c) => {
+        if (c.id === params.customerId) {
+          return {
+            ...c,
+            balance: newBalance,
+            availableBalance: newAvail,
+            notes: [
+              {
+                id: `note-${Date.now()}`,
+                authorName: "Administrator",
+                authorRole: "Sole Bank Administrator",
+                timestamp: timestampStr,
+                content: `Manual ${params.type}: ${c.currency} ${amt.toFixed(2)}. Narration: ${params.narration}. Counterparty: ${params.counterparty || "Direct Ledger"}`,
+                category: "Audit",
+              },
+              ...c.notes,
+            ],
+          };
+        }
+        return c;
+      })
+    );
+
+    try {
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (portalObj.id === params.customerId || portalObj.customerId === target.customerId || portalObj.email === target.email) {
+          portalObj.balance = newBalance;
+          portalObj.availableBalance = newAvail;
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
+        }
+      }
+    } catch {}
+
+    const txRef = `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newTx: TransactionRecord = {
+      id: `tx-${Date.now()}`,
+      reference: txRef,
+      customerId: target.customerId,
+      customerName: target.fullName,
+      type: params.category || (isCredit ? "Manual Credit" : "Manual Debit"),
+      amount: amt,
+      currency: target.currency,
+      direction: isCredit ? "Inbound" : "Outbound",
+      timestamp: timestampStr,
+      status: "Settled",
+      riskScore: 2,
+      riskLevel: "Low",
+      originatingBank: isCredit ? (params.counterparty || "Pinnacle J Trust Reserve Treasury") : "Pinnacle J Trust Bank",
+      beneficiaryName: isCredit ? target.fullName : (params.counterparty || "External Institutional Settlement"),
+      beneficiaryAccount: target.accountNumber,
+      clearingRoute: isCredit ? "Manual Administrative Credit Entry" : "Manual Administrative Debit Order",
+      purpose: params.narration,
+      timeline: [
+        {
+          stage: "Initiated",
+          timestamp: timestampStr,
+          status: "Completed",
+          note: `Manual entry by Administrator`,
+        },
+        {
+          stage: "Authorized",
+          timestamp: timestampStr,
+          status: "Completed",
+          note: `Signed with Administrative Master FIPS Key`,
+        },
+        {
+          stage: "Settled",
+          timestamp: timestampStr,
+          status: "Completed",
+          note: `Ledger adjusted. New balance: ${target.currency} ${newBalance.toFixed(2)}`,
+        },
+      ],
+    };
+
+    setTransactions((prev) => [newTx, ...prev]);
+
+    try {
+      const userTxKey = `pjtb_portal_tx_${target.id || target.customerId}`;
+      const existingPortalTx = localStorage.getItem(userTxKey);
+      const portalTxList = existingPortalTx ? JSON.parse(existingPortalTx) : [];
+      portalTxList.unshift({
+        id: newTx.id,
+        reference: newTx.reference,
+        date: timestampStr,
+        description: params.narration,
+        category: isCredit ? "Deposit" : "Withdrawal",
+        amount: amt,
+        currency: target.currency,
+        status: "Completed",
+        counterparty: params.counterparty || (isCredit ? "Pinnacle J Reserve Treasury" : "Direct Settlement"),
+      });
+      localStorage.setItem(userTxKey, JSON.stringify(portalTxList));
+    } catch {}
+
+    logAuditEntry(
+      isCredit ? "CREDIT_ACCOUNT" : "DEBIT_ACCOUNT",
+      target.customerId,
+      `${params.type} ${target.currency} ${amt.toFixed(2)} â€” ${target.fullName}`,
+      `Narration: ${params.narration} | Date/Time: ${timestampStr} | New Balance: ${target.currency} ${newBalance.toFixed(2)}`,
+      undefined,
+      "Info"
+    );
+
+    const newNotif: SystemNotification = {
+      id: `notif-${Date.now()}`,
+      title: `Account ${params.type}ed: ${target.fullName}`,
+      message: `${target.fullName} (${target.customerId}) ${params.type.toLowerCase()}ed with ${target.currency} ${amt.toLocaleString("en-US", { minimumFractionDigits: 2 })}. Narration: "${params.narration}". Balance now: ${target.currency} ${newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}.`,
+      timestamp: "Just now",
+      read: false,
+      severity: "Info",
+      category: "Transaction",
+      actionLink: newTx.reference,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    toast.success(`Account successfully ${params.type.toLowerCase()}ed`, {
+      description: `${target.fullName}: ${target.currency} ${amt.toLocaleString("en-US", { minimumFractionDigits: 2 })}. Balance: ${target.currency} ${newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}.`,
+    });
+  };
+
+  const editTransaction = (params: EditTransactionParams) => {
+    const target = transactions.find((t) => t.id === params.transactionId);
+    if (!target) return;
+
+    const updatedTimestamp = params.date && params.time ? `${params.date} ${params.time}` : (params.date || target.timestamp);
+
+    setTransactions((prev) =>
+      prev.map((t) => {
+        if (t.id === params.transactionId) {
+          return {
+            ...t,
+            timestamp: updatedTimestamp,
+            purpose: params.purpose || params.narration || t.purpose,
+            status: params.status || t.status,
+            originatingBank: params.originatingBank || params.counterparty || t.originatingBank,
+            type: params.category || t.type,
+          };
+        }
+        return t;
+      })
+    );
+
+    logAuditEntry(
+      "EDIT_TRANSACTION",
+      target.reference,
+      `Transaction ${target.reference} updated`,
+      `New Date/Time: ${updatedTimestamp} | Purpose: ${params.purpose || params.narration || target.purpose} | Status: ${params.status || target.status}`,
+      undefined,
+      "Info"
+    );
+
+    toast.success(`Transaction ${target.reference} updated`, {
+      description: `Timestamp: ${updatedTimestamp}. Narration updated.`,
+    });
+  };
+
   const resetToDefaults = () => {
     setCustomers(INITIAL_CUSTOMERS);
     setTransactions(INITIAL_TRANSACTIONS);
@@ -523,6 +697,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         markAllNotificationsRead,
         activeAdmin,
         approveCustomerAccount,
+        creditDebitCustomer,
+        editTransaction,
         resetToDefaults,
       }}
     >

@@ -77,7 +77,10 @@ export type TransactionType =
   | "Internal Transfer"
   | "Custodial Escrow"
   | "Foreign Exchange"
-  | "Treasury Dividend";
+  | "Treasury Dividend"
+  | "Manual Credit"
+  | "Manual Debit"
+  | "Administrative Adjustment";
 
 export type TransactionStatus = "Settled" | "Clearing" | "Flagged" | "Rejected" | "Reversed";
 export type RiskLevel = "Low" | "Medium" | "High" | "Critical";
@@ -124,7 +127,14 @@ export interface AuditLogEntry {
     | "MODIFY_TRANSFER_LIMIT"
     | "SYSTEM_CONFIG_CHANGE"
     | "SECURITY_OVERRIDE"
+<<<<<<< HEAD
     | "ACCOUNT_APPROVED";
+=======
+    | "ACCOUNT_APPROVED"
+    | "CREDIT_ACCOUNT"
+    | "DEBIT_ACCOUNT"
+    | "EDIT_TRANSACTION";
+>>>>>>> 8afa0da (feat: add admin credit/debit, transaction edit with narrations, user avatar upload, and 3D spinning debit card on globe)
   targetId: string;
   targetDescription: string;
   timestamp: string;
@@ -168,4 +178,28 @@ export interface SystemNotification {
   severity: "Info" | "Warning" | "Critical";
   isRead: boolean;
   actionUrl?: string;
+}
+
+
+export interface CreditDebitParams {
+  customerId: string;
+  type: "Credit" | "Debit";
+  amount: number;
+  date: string;
+  time: string;
+  narration: string;
+  counterparty?: string;
+  category?: TransactionType;
+}
+
+export interface EditTransactionParams {
+  transactionId: string;
+  date?: string;
+  time?: string;
+  purpose?: string;
+  narration?: string;
+  status?: TransactionStatus;
+  counterparty?: string;
+  originatingBank?: string;
+  category?: TransactionType;
 }

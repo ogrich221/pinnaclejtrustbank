@@ -22,6 +22,7 @@ import {
   Save,
 } from "lucide-react";
 import { CustomerRecord, AdministrativeNote } from "../types";
+import { CreditDebitModal } from "./CreditDebitModal";
 import { useAdminData } from "../AdminDataContext";
 
 interface CustomerProfileModalProps {
@@ -39,6 +40,8 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 }) => {
   const { transactions, updateVerificationStatus, addCustomerNote, editCustomerDetails, approveCustomerAccount } = useAdminData();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const [showCreditDebitModal, setShowCreditDebitModal] = useState(false);
+  const [creditDebitModalType, setCreditDebitModalType] = useState<"Credit" | "Debit">("Credit");
 
   // Edit form state for Profile Information
   const [isEditing, setIsEditing] = useState(false);
@@ -693,6 +696,14 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
           )}
         </div>
       </div>
+      {/* Credit / Debit Modal */}
+      {showCreditDebitModal && (
+        <CreditDebitModal
+          customer={customer}
+          initialType={creditDebitModalType}
+          onClose={() => setShowCreditDebitModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -21,6 +21,7 @@ import { useAdminData } from "../AdminDataContext";
 import { CustomerRecord, CustomerAccountStatus, VerificationStatus } from "../types";
 import { CustomerProfileModal } from "./CustomerProfileModal";
 import { StatusActionModal } from "./StatusActionModal";
+import { CreditDebitModal } from "./CreditDebitModal";
 
 interface CustomerManagementProps {
   initialFilter?: string;
@@ -45,6 +46,16 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
   >("profile");
   const [statusModalOpen, setStatusModalOpen] = useState<boolean>(false);
   const [targetStatus, setTargetStatus] = useState<CustomerAccountStatus | null>(null);
+  const [creditDebitTarget, setCreditDebitTarget] = useState<CustomerRecord | null>(null);
+  const [creditDebitType, setCreditDebitType] = useState<"Credit" | "Debit">("Credit");
+  const [creditDebitOpen, setCreditDebitOpen] = useState(false);
+
+  const openCreditDebit = (c: CustomerRecord, type: "Credit" | "Debit" = "Credit") => {
+    setCreditDebitTarget(c);
+    setCreditDebitType(type);
+    setCreditDebitOpen(true);
+    setActiveMenuId(null);
+  };
 
   // Filter & Search Logic
   const filteredCustomers = useMemo(() => {
@@ -368,6 +379,14 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                               <CheckCircle2 className="h-3 w-3" /> Approve
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => openCreditDebit(c, "Credit")}
+                            className="inline-flex items-center gap-1 rounded-lg border border-gold/30 bg-gold/10 px-2 py-1 text-[11px] font-semibold text-gold hover:bg-gold/20 transition-all shadow-sm"
+                            title="Credit or Debit Customer Account"
+                          >
+                            <DollarSign className="h-3 w-3" /> Â± Funds
+                          </button>
                           <div className="relative inline-block text-left">
                           <button
                             type="button"
@@ -407,6 +426,21 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-ivory/90 hover:bg-ivory/10"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Review Account Activity
+                              </button>
+
+                                                            <button
+                                type="button"
+                                onClick={() => openCreditDebit(c, "Credit")}
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-emerald-400 hover:bg-emerald-500/15 font-semibold"
+                              >
+                                <PlusCircle className="h-3.5 w-3.5" /> ï¼‹ Credit Account
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openCreditDebit(c, "Debit")}
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-rose-500/15 font-semibold"
+                              >
+                                <MinusCircle className="h-3.5 w-3.5" /> âˆ’ Debit Account
                               </button>
 
                               <div className="my-1 border-t border-ivory/10" />
@@ -494,6 +528,15 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
             setProfileModalOpen(false);
             openStatusChange(selectedCustomer, status);
           }}
+        />
+      )}
+
+      {/* Credit / Debit Modal */}
+      {creditDebitOpen && creditDebitTarget && (
+        <CreditDebitModal
+          customer={creditDebitTarget}
+          initialType={creditDebitType}
+          onClose={() => setCreditDebitOpen(false)}
         />
       )}
 

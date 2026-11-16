@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Globe as GlobeIcon, MapPin, Building2, Clock, CheckCircle2, RotateCw, Pause, Play, Compass, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { SpinningDebitCard } from "./SpinningDebitCard";
 
 export interface BranchLocation {
   id: string;
@@ -770,6 +771,19 @@ export function GlobalBranchesGlobe() {
             Connected across the world&apos;s preeminent financial centers. Explore our 12 active banking branches
             blinking in real-time across the globe with 24/7 cross-border clearing and custodial excellence.
           </p>
+        </div>
+
+        {/* 3D Spinning Pinnacle J Trust Bank Debit Card On Top of the Globe */}
+        <div className="mt-12 mb-4 flex flex-col items-center justify-center">
+          <div className="text-center mb-3">
+            <span className="text-[11px] font-mono tracking-widest text-gold uppercase">
+              Global Access Credential
+            </span>
+            <h3 className="text-xl md:text-2xl font-display font-bold text-ivory">
+              Pinnacle J World Elite Debit Card
+            </h3>
+          </div>
+          <SpinningDebitCard />
         </div>
 
         {/* Globe Stage & Active Branch Card Grid */}

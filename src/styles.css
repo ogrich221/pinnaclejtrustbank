@@ -256,3 +256,18 @@
 
 @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 @utility animate-shimmer { animation: shimmer 1.6s ease-in-out infinite; }
+
+@keyframes spin3d {
+  0% {
+    transform: rotateY(0deg) rotateX(4deg);
+  }
+  50% {
+    transform: rotateY(180deg) rotateX(-4deg);
+  }
+  100% {
+    transform: rotateY(360deg) rotateX(4deg);
+  }
+}
+@utility animate-spin-card {
+  animation: spin3d 12s linear infinite;
+}

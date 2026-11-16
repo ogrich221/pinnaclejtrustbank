@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   CreditCard,
@@ -90,6 +90,78 @@ export const CustomerDashboard: React.FC = () => {
   const [transferType, setTransferType] = useState<"domestic" | "international">("domestic");
   const [showBalance, setShowBalance] = useState(true);
   const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size exceeds 5MB limit");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setCustomer((prev: any) => {
+        const updated = { ...prev, avatarUrl: dataUrl };
+        localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
+        try {
+          const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+          if (adminCusts) {
+            const list = JSON.parse(adminCusts);
+            const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
+            if (idx >= 0) {
+              list[idx].avatarUrl = dataUrl;
+              localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+            }
+          }
+        } catch {}
+        return updated;
+      });
+      toast.success("Profile picture updated successfully");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSelectPresetAvatar = (url: string) => {
+    setCustomer((prev: any) => {
+      const updated = { ...prev, avatarUrl: url };
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
+      try {
+        const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+        if (adminCusts) {
+          const list = JSON.parse(adminCusts);
+          const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
+          if (idx >= 0) {
+            list[idx].avatarUrl = url;
+            localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+          }
+        }
+      } catch {}
+      return updated;
+    });
+    toast.success("Identity avatar selected");
+  };
+
+  const handleRemoveAvatar = () => {
+    setCustomer((prev: any) => {
+      const updated = { ...prev, avatarUrl: undefined };
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
+      try {
+        const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+        if (adminCusts) {
+          const list = JSON.parse(adminCusts);
+          const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
+          if (idx >= 0) {
+            delete list[idx].avatarUrl;
+            localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+          }
+        }
+      } catch {}
+      return updated;
+    });
+    toast.info("Profile picture removed");
+  };
 
   // Beneficiaries
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
@@ -312,6 +384,17 @@ export const CustomerDashboard: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 border-l border-ivory/15 pl-4">
+              {customer.avatarUrl ? (
+                <img
+                  src={customer.avatarUrl}
+                  alt={customer.fullName}
+                  className="h-8 w-8 rounded-full object-cover border border-gold/50 shadow-sm"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-gold/40 bg-gold/15 text-xs font-bold text-gold">
+                  {customer.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                </div>
+              )}
               <div className="text-right hidden md:block">
                 <p className="font-semibold text-ivory text-xs">{customer.fullName}</p>
                 <p className="text-[10px] text-ivory/60 font-mono">ID: {customer.customerId}</p>
@@ -395,7 +478,22 @@ export const CustomerDashboard: React.FC = () => {
                     </span>
                   </div>
 
-                  <h1 className="text-3xl font-display font-bold text-ivory">{customer.fullName}</h1>
+                  <div className="flex items-center gap-4">
+                    {customer.avatarUrl ? (
+                      <img
+                        src={customer.avatarUrl}
+                        alt={customer.fullName}
+                        className="h-16 w-16 rounded-full object-cover border-2 border-gold/60 shadow-xl"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-gold/40 bg-gold/15 font-display text-2xl font-bold text-gold shadow-xl">
+                        {customer.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                      </div>
+                    )}
+                    <div>
+                      <h1 className="text-3xl font-display font-bold text-ivory">{customer.fullName}</h1>
+                    </div>
+                  </div>
 
                   {/* Masked Account Number with Toggle */}
                   <div className="mt-2 flex items-center gap-2 text-xs font-mono text-ivory/70">

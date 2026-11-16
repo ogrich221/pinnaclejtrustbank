@@ -24,6 +24,7 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
   const [filterType, setFilterType] = useState<string>(initialFilter);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTx, setSelectedTx] = useState<TransactionRecord | null>(null);
+  const [editingTx, setEditingTx] = useState<TransactionRecord | null>(null);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
@@ -200,16 +201,30 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
 
                   {/* Action */}
                   <td className="py-4 pl-3 pr-6 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTx(tx);
-                      }}
-                      className="rounded-lg p-1.5 text-ivory/60 hover:bg-ivory/10 hover:text-ivory"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTx(tx);
+                        }}
+                        className="rounded-lg p-1.5 text-ivory/60 hover:bg-ivory/10 hover:text-ivory"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTx(tx);
+                        }}
+                        className="rounded-lg p-1.5 text-gold/80 hover:bg-gold/15 hover:text-gold transition-colors"
+                        title="Edit Date, Time & Narration"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -290,7 +305,18 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-ivory/10">
+            <div className="flex justify-between items-center pt-2 border-t border-ivory/10">
+              <button
+                type="button"
+                onClick={() => {
+                  const t = selectedTx;
+                  setSelectedTx(null);
+                  setEditingTx(t);
+                }}
+                className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25 transition-colors flex items-center gap-1.5"
+              >
+                <Edit className="h-3.5 w-3.5" /> Edit Date, Time & Narration
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedTx(null)}
