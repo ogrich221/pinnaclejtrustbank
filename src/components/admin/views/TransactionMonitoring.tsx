@@ -234,7 +234,7 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

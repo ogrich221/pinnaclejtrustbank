@@ -127,14 +127,10 @@ export interface AuditLogEntry {
     | "MODIFY_TRANSFER_LIMIT"
     | "SYSTEM_CONFIG_CHANGE"
     | "SECURITY_OVERRIDE"
-<<<<<<< HEAD
-    | "ACCOUNT_APPROVED";
-=======
     | "ACCOUNT_APPROVED"
     | "CREDIT_ACCOUNT"
     | "DEBIT_ACCOUNT"
     | "EDIT_TRANSACTION";
->>>>>>> 8afa0da (feat: add admin credit/debit, transaction edit with narrations, user avatar upload, and 3D spinning debit card on globe)
   targetId: string;
   targetDescription: string;
   timestamp: string;
