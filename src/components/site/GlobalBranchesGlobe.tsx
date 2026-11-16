@@ -246,7 +246,7 @@ export function GlobalBranchesGlobe() {
   }, []);
 
   const activeBranch = useMemo(() => {
-    return BRANCH_LOCATIONS.find((b) => b.id === activeBranchId) || BRANCH_LOCATIONS[0];
+    return BRANCH_LOCATIONS.find((b) => b.id === activeBranchId) || BRANCH_LOCATIONS[0]!;
   }, [activeBranchId]);
 
   // Target rotation animation for smooth centering when clicking a branch

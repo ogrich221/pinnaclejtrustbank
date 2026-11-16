@@ -23,7 +23,7 @@ export const LANGUAGES: LanguageOption[] = [
 ];
 
 export function LanguageSelector({ variant = "header" }: { variant?: "header" | "mobile" }) {
-  const [selectedLang, setSelectedLang] = useState<LanguageOption>(LANGUAGES[0]);
+  const [selectedLang, setSelectedLang] = useState<LanguageOption>(LANGUAGES[0]!);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
