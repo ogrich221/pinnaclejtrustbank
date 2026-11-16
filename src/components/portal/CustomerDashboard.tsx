@@ -22,6 +22,10 @@ import {
   Trash2,
   Clock,
   Printer,
+  ThumbsUp,
+  Copy,
+  Check,
+  MapPin,
   ChevronRight,
   ExternalLink,
   Building,
@@ -244,6 +248,7 @@ export const CustomerDashboard: React.FC = () => {
   // Transfer Forms
   const [domesticForm, setDomesticForm] = useState({
     beneficiaryBank: "JPMorgan Chase Bank, N.A.",
+    beneficiaryBankAddress: "270 Park Avenue, Financial District, New York, NY 10017",
     accountNumber: "",
     beneficiaryName: "",
     amount: "",
@@ -253,15 +258,18 @@ export const CustomerDashboard: React.FC = () => {
   const [intlForm, setIntlForm] = useState({
     beneficiaryName: "",
     beneficiaryAddress: "",
-    bankName: "",
-    bankAddress: "",
+    bankName: "UBS Switzerland AG",
+    bankAddress: "Paradeplatz 6, 8001 Zurich, Switzerland",
     country: "Switzerland",
-    swiftBic: "",
+    swiftBic: "UBSWCHZH80A",
     ibanAccount: "",
     amount: "",
     currency: "USD",
     purpose: "Commercial Wealth Allocation",
   });
+
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
 
   // PIN Authorization Modal State
   const [pinModalOpen, setPinModalOpen] = useState(false);
@@ -271,6 +279,14 @@ export const CustomerDashboard: React.FC = () => {
     amount: number;
     currency: string;
     beneficiary: string;
+    bankName: string;
+    bankAddress: string;
+    accountNumber: string;
+    swiftBic?: string;
+    purpose: string;
+    fee: number;
+    currentBalance: number;
+    newBalance: number;
     details: any;
   } | null>(null);
 
@@ -280,11 +296,15 @@ export const CustomerDashboard: React.FC = () => {
   // Handle Domestic Transfer Submit
   const handleInitiateDomestic = (e: React.FormEvent) => {
     e.preventDefault();
+    if (customer.balance <= 0) {
+      toast.error("Account balance is 0.00. Please deposit funds before initiating an outbound transfer.");
+      return;
+    }
     const amt = parseFloat(domesticForm.amount);
     if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
     if (amt > customer.availableBalance) return void toast.error("Transfer amount exceeds available balance");
-    if (!domesticForm.beneficiaryName || !domesticForm.accountNumber) {
-      return void toast.error("Please fill in all mandatory beneficiary fields");
+    if (!domesticForm.beneficiaryName || !domesticForm.accountNumber || !domesticForm.beneficiaryBankAddress) {
+      return void toast.error("Recipient Bank Address and Beneficiary details are required");
     }
 
     setPendingTransfer({
@@ -292,20 +312,34 @@ export const CustomerDashboard: React.FC = () => {
       amount: amt,
       currency: customer.currency,
       beneficiary: domesticForm.beneficiaryName,
+      bankName: domesticForm.beneficiaryBank,
+      bankAddress: domesticForm.beneficiaryBankAddress,
+      accountNumber: domesticForm.accountNumber,
+      purpose: domesticForm.description || "Domestic Commercial Settlement",
+      fee: 0.0,
+      currentBalance: customer.balance,
+      newBalance: Math.max(0, customer.balance - amt),
       details: { ...domesticForm },
     });
-    setPinInput("");
-    setPinModalOpen(true);
+    setPreviewModalOpen(true);
   };
 
   // Handle International Wire Submit
   const handleInitiateIntl = (e: React.FormEvent) => {
     e.preventDefault();
+    if (customer.balance <= 0) {
+      toast.error("Account balance is 0.00. Please deposit funds before initiating an outbound transfer.");
+      return;
+    }
     const amt = parseFloat(intlForm.amount);
     if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
-    if (amt > customer.availableBalance) return void toast.error("Transfer amount exceeds available balance");
+    const fee = 15.0;
+    if (amt + fee > customer.availableBalance) return void toast.error("Transfer amount + $15.00 network fee exceeds available balance");
     if (!intlForm.beneficiaryName || !intlForm.swiftBic || !intlForm.ibanAccount) {
       return void toast.error("Please complete all mandatory international wire fields");
+    }
+    if (!intlForm.bankAddress || !intlForm.bankAddress.trim()) {
+      return void toast.error("Recipient Bank Address is required when initiating wire transfer");
     }
 
     setPendingTransfer({
@@ -313,10 +347,17 @@ export const CustomerDashboard: React.FC = () => {
       amount: amt,
       currency: intlForm.currency,
       beneficiary: intlForm.beneficiaryName,
+      bankName: intlForm.bankName || "Receiving Financial Institution",
+      bankAddress: intlForm.bankAddress,
+      accountNumber: intlForm.ibanAccount,
+      swiftBic: intlForm.swiftBic,
+      purpose: intlForm.purpose,
+      fee: fee,
+      currentBalance: customer.balance,
+      newBalance: Math.max(0, customer.balance - amt - fee),
       details: { ...intlForm },
     });
-    setPinInput("");
-    setPinModalOpen(true);
+    setPreviewModalOpen(true);
   };
 
   // Execute transfer after PIN verified
@@ -346,11 +387,17 @@ export const CustomerDashboard: React.FC = () => {
       availableBalance: prev.availableBalance - (pendingTransfer?.amount || 0),
     }));
 
+    const finalBalance = Math.max(0, customer.balance - (pendingTransfer?.amount || 0) - (pendingTransfer?.fee || 0));
     setReceiptData({
       ...newTx,
-      fee: pendingTransfer?.type === "International" ? 15.0 : 0.0,
+      fee: pendingTransfer?.fee || 0.0,
       originAccount: customer.maskedAccountNumber,
-      clearingTime: "Settled via SWIFT GPI / Fedwire",
+      clearingTime: "Settled via SWIFT GPI / Fedwire Rails",
+      newBalance: finalBalance,
+      bankName: pendingTransfer?.bankName,
+      bankAddress: pendingTransfer?.bankAddress,
+      accountNumber: pendingTransfer?.accountNumber,
+      swiftBic: pendingTransfer?.swiftBic,
     });
 
     setPinModalOpen(false);
@@ -861,6 +908,34 @@ export const CustomerDashboard: React.FC = () => {
                       </select>
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-ivory/80 mb-1.5">
+                        Recipient Bank Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={intlForm.bankName}
+                        onChange={(e) => setIntlForm({ ...intlForm, bankName: e.target.value })}
+                        placeholder="e.g. UBS Switzerland AG"
+                        required
+                        className="w-full rounded-xl border border-ivory/20 bg-navy-deep px-4 py-2.5 text-xs text-ivory placeholder:text-ivory/30 focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-ivory/80 mb-1.5">
+                        Recipient Bank Address *
+                      </label>
+                      <input
+                        type="text"
+                        value={intlForm.bankAddress}
+                        onChange={(e) => setIntlForm({ ...intlForm, bankAddress: e.target.value })}
+                        placeholder="e.g. Paradeplatz 6, 8001 Zurich, Switzerland"
+                        required
+                        className="w-full rounded-xl border border-ivory/20 bg-navy-deep px-4 py-2.5 text-xs text-ivory placeholder:text-ivory/30 focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-ivory/80 mb-1.5">
                         Payment Purpose / Regulatory Declaration *
@@ -1044,30 +1119,44 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 6: PROFILE AND ACCOUNT SETTINGS */}
+        {/* TAB 6: PROFILE AND ACCOUNT SETTINGS (ULTRA GLASSLIKE) */}
         {activeTab === "settings" && (
-          <div className="rounded-3xl border border-ivory/15 bg-white/[0.04] p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6 animate-in fade-in duration-200">
-            <div className="border-b border-ivory/10 pb-4">
-              <h3 className="text-2xl font-display font-bold text-ivory">Profile Information & Preferences</h3>
-              <p className="text-xs text-ivory/60">Manage your contact records and communication settings</p>
+          <div className="relative rounded-3xl border border-white/20 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-white/[0.06] p-6 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-8 animate-in fade-in duration-200 overflow-hidden">
+            {/* Ambient Background Glow */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
+            <div className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+
+            <div className="relative z-10 border-b border-white/10 pb-5">
+              <span className="text-[10px] font-mono tracking-widest text-gold uppercase">Institutional Credentials</span>
+              <h3 className="text-3xl font-display font-bold text-ivory mt-1">Profile & Identification Settings</h3>
+              <p className="text-xs text-ivory/60 mt-0.5">Glassmorphic security dashboard for personal data and verified account credentials</p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 text-xs">
-              <div className="rounded-xl border border-ivory/10 bg-navy-deep/60 p-4">
-                <span className="text-[10px] text-ivory/50 uppercase">Legal Full Name</span>
-                <p className="font-semibold text-ivory mt-1">{customer.fullName}</p>
+            <div className="relative z-10 grid gap-5 sm:grid-cols-2 text-xs">
+              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
+                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Legal Full Name</span>
+                <p className="font-display font-bold text-lg text-ivory mt-1">{customer.fullName}</p>
+                <span className="text-[10px] text-ivory/40">Verified via Primary Identity KYC</span>
               </div>
-              <div className="rounded-xl border border-ivory/10 bg-navy-deep/60 p-4">
-                <span className="text-[10px] text-ivory/50 uppercase">Registered Email</span>
-                <p className="font-semibold text-ivory mt-1">{customer.email}</p>
+
+              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
+                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Registered Email</span>
+                <p className="font-mono text-sm text-ivory mt-1">{customer.email}</p>
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1">
+                  <CheckCircle2 className="h-3 w-3" /> Two-Factor Enabled
+                </span>
               </div>
-              <div className="rounded-xl border border-ivory/10 bg-navy-deep/60 p-4">
-                <span className="text-[10px] text-ivory/50 uppercase">Registered Mobile</span>
-                <p className="font-semibold text-ivory mt-1">{customer.phone}</p>
+
+              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
+                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Registered Mobile</span>
+                <p className="font-mono text-sm text-ivory mt-1">{customer.phone}</p>
+                <span className="text-[10px] text-ivory/40">Encrypted SMS Gateway Active</span>
               </div>
-              <div className="rounded-xl border border-ivory/10 bg-navy-deep/60 p-4">
-                <span className="text-[10px] text-ivory/50 uppercase">Primary Residence</span>
-                <p className="font-semibold text-ivory mt-1">{customer.address.street}, {customer.address.city}, {customer.address.country}</p>
+
+              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
+                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Primary Residence</span>
+                <p className="font-medium text-xs text-ivory mt-1">{customer.address.street}, {customer.address.city}, {customer.address.country}</p>
+                <span className="text-[10px] text-ivory/40">Jurisdiction: {customer.address.country}</span>
               </div>
             </div>
           </div>

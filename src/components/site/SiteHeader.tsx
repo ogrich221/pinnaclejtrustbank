@@ -65,10 +65,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             <Link to="/contact" className="hover:text-gold transition-colors text-[11px] tracking-wide">
               Support 24/7
             </Link>
-            <span className="hidden sm:inline text-ivory/20">|</span>
-            <Link to="/admin" className="hover:text-gold transition-colors text-[11px] tracking-wide text-gold/90 font-medium">
-              Admin Portal
-            </Link>
+            
           </div>
         </div>
       </div>
@@ -115,9 +112,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           <div className="mb-4 pb-4 border-b border-ivory/10">
             <LanguageSelector variant="mobile" />
           </div>
-          <Link to="/admin" onClick={() => setOpen(false)} className="block border-b border-ivory/10 py-3 text-gold font-semibold">
-            Admin Dashboard
-          </Link>
+          
           {nav.map((n) => (
             <Link
               key={n.to}
