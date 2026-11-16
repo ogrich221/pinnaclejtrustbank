@@ -11,17 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BusinessBankingRouteImport } from './routes/business-banking'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalBankingRouteImport } from './routes/digital-banking'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpenAccountRouteImport } from './routes/open-account'
 import { Route as PersonalBankingRouteImport } from './routes/personal-banking'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as PortalRouteImport } from './routes/portal'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BusinessBankingRoute = BusinessBankingRouteImport.update({
@@ -63,6 +68,11 @@ const PersonalBankingRoute = PersonalBankingRouteImport.update({
   path: '/personal-banking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -78,125 +88,115 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortalRoute = PortalRouteImport.update({
-  id: '/portal',
-  path: '/portal',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
+  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AdminRoute
-  '/portal': typeof PortalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
+  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AdminRoute
-  '/portal': typeof PortalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
+  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AdminRoute
-  '/portal': typeof PortalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
     | '/login'
     | '/open-account'
     | '/personal-banking'
+    | '/portal'
     | '/privacy'
     | '/security'
     | '/terms'
-    | '/admin'
-    | '/portal'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/admin'
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
     | '/login'
     | '/open-account'
     | '/personal-banking'
+    | '/portal'
     | '/privacy'
     | '/security'
     | '/terms'
-    | '/admin'
-    | '/portal'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
     | '/login'
     | '/open-account'
     | '/personal-banking'
+    | '/portal'
     | '/privacy'
     | '/security'
     | '/terms'
-    | '/admin'
-    | '/portal'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
   BusinessBankingRoute: typeof BusinessBankingRoute
   ContactRoute: typeof ContactRoute
   DigitalBankingRoute: typeof DigitalBankingRoute
   LoginRoute: typeof LoginRoute
   OpenAccountRoute: typeof OpenAccountRoute
   PersonalBankingRoute: typeof PersonalBankingRoute
+  PortalRoute: typeof PortalRoute
   PrivacyRoute: typeof PrivacyRoute
   SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
-  AdminRoute: typeof AdminRoute
-  PortalRoute: typeof PortalRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -213,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/business-banking': {
@@ -257,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonalBankingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -269,20 +283,6 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof SecurityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portal': {
-      id: '/portal'
-      path: '/portal'
-      fullPath: '/portal'
-      preLoaderRoute: typeof PortalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -298,17 +298,17 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
   BusinessBankingRoute: BusinessBankingRoute,
   ContactRoute: ContactRoute,
   DigitalBankingRoute: DigitalBankingRoute,
   LoginRoute: LoginRoute,
   OpenAccountRoute: OpenAccountRoute,
   PersonalBankingRoute: PersonalBankingRoute,
+  PortalRoute: PortalRoute,
   PrivacyRoute: PrivacyRoute,
   SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
-  AdminRoute: AdminRoute,
-  PortalRoute: PortalRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

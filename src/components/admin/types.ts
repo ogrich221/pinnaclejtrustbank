@@ -123,14 +123,15 @@ export interface AuditLogEntry {
     | "ADD_ADMIN_NOTE"
     | "MODIFY_TRANSFER_LIMIT"
     | "SYSTEM_CONFIG_CHANGE"
-    | "SECURITY_OVERRIDE";
+    | "SECURITY_OVERRIDE"
+    | "ACCOUNT_APPROVED";
   targetId: string;
   targetDescription: string;
   timestamp: string;
   ipAddress: string;
   reason: string;
   note?: string;
-  severity: "Info" | "Warning" | "Critical";
+  severity: "Info" | "Warning" | "Critical" | "Success";
 }
 
 // Single Administrator Model
@@ -163,7 +164,7 @@ export interface SystemNotification {
   title: string;
   message: string;
   timestamp: string;
-  category: "Security" | "Verification" | "Compliance" | "Transaction" | "System";
+  category: "Security" | "Verification" | "Compliance" | "Transaction" | "System" | "Customer";
   severity: "Info" | "Warning" | "Critical";
   isRead: boolean;
   actionUrl?: string;

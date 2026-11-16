@@ -238,15 +238,16 @@ export function GlobalBranchesGlobe() {
   const [hoveredBranchId, setHoveredBranchId] = useState<string | null>(null);
 
   // Real-time branch clocks
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   const activeBranch = useMemo(() => {
-    return BRANCH_LOCATIONS.find((b) => b.id === activeBranchId) || BRANCH_LOCATIONS[0];
+    return BRANCH_LOCATIONS.find((b) => b.id === activeBranchId) || BRANCH_LOCATIONS[0]!;
   }, [activeBranchId]);
 
   // Target rotation animation for smooth centering when clicking a branch
@@ -707,8 +708,8 @@ export function GlobalBranchesGlobe() {
       setIsDragging(true);
       targetRotationRef.current = null;
       setDragStart({
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
+        x: e.touches[0]!.clientX,
+        y: e.touches[0]!.clientY,
         rot: rotationLng,
         tilt: tiltLat,
       });
@@ -717,8 +718,8 @@ export function GlobalBranchesGlobe() {
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (isDragging && e.touches.length === 1) {
-      const dx = e.touches[0].clientX - dragStart.x;
-      const dy = e.touches[0].clientY - dragStart.y;
+      const dx = e.touches[0]!.clientX - dragStart.x;
+      const dy = e.touches[0]!.clientY - dragStart.y;
       setRotationLng((dragStart.rot - dx * 0.4 + 360) % 360);
       setTiltLat(Math.max(-35, Math.min(45, dragStart.tilt + dy * 0.3)));
     }
@@ -730,6 +731,7 @@ export function GlobalBranchesGlobe() {
 
   // Format local time for any branch
   const getBranchTime = (tz: string) => {
+    if (!currentTime) return "--:--:--";
     try {
       return new Intl.DateTimeFormat("en-US", {
         timeZone: tz,

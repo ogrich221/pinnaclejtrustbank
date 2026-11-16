@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  CheckCircle2,
   Plus,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
@@ -438,6 +439,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                               )}
                             </div>
                           )}
+                          </div>
                         </div>
                       </td>
                     </tr>

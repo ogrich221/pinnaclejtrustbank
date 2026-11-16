@@ -226,7 +226,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
       ipAddress: activeAdmin.sessionIp,
       reason,
-      note,
+      ...(note !== undefined ? { note } : {}),
       severity,
     };
     setAuditLogs((prev) => [newEntry, ...prev]);
@@ -417,7 +417,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id === customerId) {
-          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" }));
+          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" as const }));
           return {
             ...c,
             accountStatus: "Active",
@@ -470,10 +470,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       title: `Account Approved: ${target.fullName}`,
       message: `Account ${target.customerId} has been approved and activated with opening balance 0.00.`,
       timestamp: "Just now",
-      read: false,
+      isRead: false,
       severity: "Info",
       category: "Customer",
-      actionLink: target.customerId,
+      actionUrl: target.customerId,
     };
     setNotifications((prev) => [newNotif, ...prev]);
 

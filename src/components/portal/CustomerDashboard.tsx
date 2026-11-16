@@ -209,10 +209,10 @@ export const CustomerDashboard: React.FC = () => {
   const handleInitiateDomestic = (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(domesticForm.amount);
-    if (!amt || amt <= 0) return toast.error("Please enter a valid transfer amount");
-    if (amt > customer.availableBalance) return toast.error("Transfer amount exceeds available balance");
+    if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
+    if (amt > customer.availableBalance) return void toast.error("Transfer amount exceeds available balance");
     if (!domesticForm.beneficiaryName || !domesticForm.accountNumber) {
-      return toast.error("Please fill in all mandatory beneficiary fields");
+      return void toast.error("Please fill in all mandatory beneficiary fields");
     }
 
     setPendingTransfer({
@@ -230,10 +230,10 @@ export const CustomerDashboard: React.FC = () => {
   const handleInitiateIntl = (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(intlForm.amount);
-    if (!amt || amt <= 0) return toast.error("Please enter a valid transfer amount");
-    if (amt > customer.availableBalance) return toast.error("Transfer amount exceeds available balance");
+    if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
+    if (amt > customer.availableBalance) return void toast.error("Transfer amount exceeds available balance");
     if (!intlForm.beneficiaryName || !intlForm.swiftBic || !intlForm.ibanAccount) {
-      return toast.error("Please complete all mandatory international wire fields");
+      return void toast.error("Please complete all mandatory international wire fields");
     }
 
     setPendingTransfer({
@@ -250,7 +250,7 @@ export const CustomerDashboard: React.FC = () => {
   // Execute transfer after PIN verified
   const handleConfirmPin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.length !== 6) return toast.error("PIN must be exactly 6 digits");
+    if (pinInput.length !== 6) return void toast.error("PIN must be exactly 6 digits");
 
     const ref = "PJTB-UETR-" + Math.floor(10000000 + Math.random() * 90000000);
     const dateStr = new Date().toISOString().replace("T", " ").substring(0, 16);

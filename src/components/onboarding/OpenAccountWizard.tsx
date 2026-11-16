@@ -154,7 +154,7 @@ const ACCOUNT_TYPE_DETAILS = {
 export const OpenAccountWizard: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [form, setForm] = useState<OnboardingData>(INITIAL_FORM);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof OnboardingData, string>>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showAnswer1, setShowAnswer1] = useState(false);
@@ -177,7 +177,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 1 Validation
   const validateStep1 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     if (!form.firstName.trim()) errs.firstName = "First name is required";
     if (!form.lastName.trim()) errs.lastName = "Last name is required";
     if (!form.dob) errs.dob = "Date of birth is required";
@@ -192,7 +192,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 2 Validation
   const validateStep2 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     if (!form.occupation.trim()) errs.occupation = "Occupation is required for KYC compliance";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -200,7 +200,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 3 Validation (Login Credentials)
   const validateStep3 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     if (!form.username.trim() || form.username.length < 5) {
       errs.username = "Username must be at least 5 alphanumeric characters";
     }
@@ -216,7 +216,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 4 Validation (Security Questions)
   const validateStep4 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     if (form.securityQuestion1 === form.securityQuestion2) {
       errs.securityQuestion2 = "Question 2 must be different from Question 1";
     }
@@ -232,7 +232,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 5 Validation (Transfer PIN)
   const validateStep5 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     const pinRegex = /^\d{6}$/;
     if (!pinRegex.test(form.transferPin)) {
       errs.transferPin = "PIN must be exactly 6 digits";
@@ -252,7 +252,7 @@ export const OpenAccountWizard: React.FC = () => {
 
   // Step 6 Validation (Review & Consents)
   const validateStep6 = (): boolean => {
-    const errs: Record<string, string> = {};
+    const errs: Partial<Record<keyof OnboardingData, string>> = {};
     if (!form.consentTerms) errs.consentTerms = "You must agree to the Terms and Conditions";
     if (!form.consentPrivacy) errs.consentPrivacy = "You must agree to the Privacy Policy";
     if (!form.consentDisclosures) errs.consentDisclosures = "You must accept the banking disclosures";
@@ -374,10 +374,9 @@ export const OpenAccountWizard: React.FC = () => {
         const storedNotifs = localStorage.getItem(notifKey);
         const notifs = storedNotifs ? JSON.parse(storedNotifs) : [];
         notifs.unshift({
-          id: 
-otif-,
-          title: New Application: ,
-          message: ${newCustomer.fullName} registered for  (). Opening balance: 0.00. Awaiting administrator approval.,
+          id: `notif-${Date.now()}`,
+          title: `New Application: ${newCustomer.fullName}`,
+          message: `${newCustomer.fullName} registered for ${newCustomer.accountType} (${newCustomer.currency}). Opening balance: 0.00. Awaiting administrator approval.`,
           timestamp: "Just now",
           read: false,
           severity: "Info",
@@ -393,14 +392,14 @@ otif-,
         const storedLogs = localStorage.getItem(auditKey);
         const logs = storedLogs ? JSON.parse(storedLogs) : [];
         logs.unshift({
-          id: udit-,
+          id: `audit-${Date.now()}`,
           timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
           adminName: "Registration Gateway",
           adminEmail: "gateway@pinnaclejtrust.com",
           action: "NEW_ACCOUNT_APPLICATION",
           targetType: "Customer",
           targetId: newCustomer.customerId,
-          details: Application submitted for  (). Opening balance: 0.00.,
+          details: `Application submitted for ${newCustomer.fullName} (${newCustomer.customerId}). Opening balance: 0.00.`,
           reason: "Online account registration completed by customer",
           ipAddress: "Customer Remote IP",
           severity: "Info",
@@ -453,7 +452,7 @@ otif-,
           <div className="mb-8 rounded-2xl border border-ivory/10 bg-[#0C1B30]/80 p-5 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between text-xs text-ivory/60 mb-3">
               <span className="font-mono uppercase tracking-wider text-gold font-semibold">
-                Step {currentStep} of 6: {stepsList[currentStep - 1].title}
+                Step {currentStep} of 6: {stepsList[currentStep - 1]?.title ?? "Application"}
               </span>
               <span className="font-mono">
                 {Math.round(((currentStep - 1) / 5) * 100)}% Complete
