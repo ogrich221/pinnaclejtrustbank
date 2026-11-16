@@ -343,11 +343,11 @@ export const AdminLayout: React.FC = () => {
               )}
             </button>
 
-            {/* Quick Demo Reset */}
+            {/* Reload System Records */}
             <button
               type="button"
               onClick={resetToDefaults}
-              title="Reset demonstration data"
+              title="Reload system records"
               className="hidden md:flex rounded-full border border-ivory/15 bg-white/[0.04] p-2 text-ivory/60 hover:border-gold hover:text-gold transition-colors"
             >
               <RotateCcw className="h-4 w-4" />

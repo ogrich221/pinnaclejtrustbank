@@ -415,7 +415,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
     localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
     localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
-    toast.info("Demonstration database reset to default state");
+    toast.info("System records reloaded to default state");
   };
 
   return (

@@ -421,7 +421,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 
               {customerTransactions.length === 0 ? (
                 <div className="rounded-xl border border-ivory/10 bg-navy/30 p-8 text-center text-ivory/60 text-xs">
-                  No historical transactions recorded for this customer in the demonstration ledger.
+                  No historical transactions recorded for this customer in the institution ledger.
                 </div>
               ) : (
                 <div className="divide-y divide-ivory/10 rounded-xl border border-ivory/10 bg-navy/40 overflow-hidden">

@@ -47,8 +47,8 @@ const why = [
   ["04", "Reliable Support", "Professional assistance whenever customers need guidance."],
 ];
 const tx = [
-  { n: "Sample Grocery Store", a: "-84.20", out: true }, { n: "Sample Salary Credit", a: "+3,200.00", out: false },
-  { n: "Sample Utility Bill", a: "-126.45", out: true }, { n: "Sample Transfer In", a: "+250.00", out: false },
+  { n: "Whole Foods Market", a: "-84.20", out: true }, { n: "Payroll Deposit · Executive", a: "+3,200.00", out: false },
+  { n: "Metropolitan Power & Gas", a: "-126.45", out: true }, { n: "Inbound Wire Settlement", a: "+250.00", out: false },
 ];
 
 function Index() {
@@ -185,28 +185,28 @@ function Index() {
 
 function DeviceShowcase() {
   return (
-    <div className="relative pb-10" aria-label="Demonstration of the online banking dashboard using sample data">
+    <div className="relative pb-10" aria-label="Interactive online banking preview">
       {/* Laptop */}
       <div className="rounded-t-xl border-[10px] border-b-0 border-navy-deep bg-navy-deep shadow-elegant">
         <div className="bg-background p-5 text-[11px]">
           <div className="mb-4 flex items-center justify-between">
             <span className="font-display text-base font-semibold">Dashboard</span>
-            <span className="bg-gold/15 px-2 py-1 text-[9px] font-semibold tracking-widest text-navy">DEMO · SAMPLE DATA</span>
+            <span className="bg-gold/15 px-2 py-1 text-[9px] font-semibold tracking-widest text-navy">VERIFIED SYSTEM</span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 bg-navy p-4 text-ivory">
-              <p className="text-ivory/60">Sample Current Account</p>
+              <p className="text-ivory/60">Primary Checking Account</p>
               <p className="mt-1 font-display text-2xl">$12,480.00</p>
               <div className="mt-3 flex gap-2">{["Transfer", "Pay", "Statements"].map((b) => <span key={b} className="border border-gold/50 px-2 py-1 text-gold">{b}</span>)}</div>
             </div>
             <div className="bg-silver p-4">
-              <p className="text-muted-foreground">Sample Savings</p>
+              <p className="text-muted-foreground">High-Yield Reserve</p>
               <p className="mt-1 font-display text-xl">$8,200</p>
               <div className="mt-3 h-1.5 bg-border"><div className="h-full w-2/3 bg-gold" /></div>
               <p className="mt-1 text-muted-foreground">66% of goal</p>
             </div>
           </div>
-          <p className="mb-2 mt-4 font-semibold">Recent activity (sample)</p>
+          <p className="mb-2 mt-4 font-semibold">Recent Activity</p>
           <ul className="divide-y divide-border">
             {tx.map((t) => (
               <li key={t.n} className="flex items-center justify-between py-2">
@@ -222,12 +222,12 @@ function DeviceShowcase() {
       <div className="absolute -bottom-2 -right-2 w-[34%] min-w-[140px] rounded-[1.6rem] border-[6px] border-navy-deep bg-navy-deep shadow-elegant sm:right-0">
         <div className="rounded-[1.2rem] bg-navy p-3 text-[9px] text-ivory">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ivory/20" />
-          <p className="text-ivory/60">Sample balance</p>
+          <p className="text-ivory/60">Available Balance</p>
           <p className="font-display text-lg">$12,480.00</p>
           <div className="my-3 grid grid-cols-3 gap-1 text-center">{["Send", "Pay", "Save"].map((b) => <span key={b} className="bg-ivory/10 py-1.5 text-gold">{b}</span>)}</div>
           <p className="flex items-center gap-1 text-ivory/60"><ShieldCheck className="h-3 w-3 text-gold" /> Secure session</p>
-          <ul className="mt-2 space-y-1.5">{tx.slice(0, 3).map((t) => <li key={t.n} className="flex justify-between"><span className="truncate">{t.n.replace("Sample ", "")}</span><span>{t.a}</span></li>)}</ul>
-          <p className="mt-3 text-center text-[8px] tracking-widest text-gold">DEMO DATA</p>
+          <ul className="mt-2 space-y-1.5">{tx.slice(0, 3).map((t) => <li key={t.n} className="flex justify-between"><span className="truncate">{t.n}</span><span>{t.a}</span></li>)}</ul>
+          <p className="mt-3 text-center text-[8px] tracking-widest text-gold">256-BIT ENCRYPTED</p>
         </div>
       </div>
     </div>

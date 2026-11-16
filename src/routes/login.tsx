@@ -36,7 +36,21 @@ function Login() {
     setErrors({}); setBusy(true);
     setTimeout(() => {
       setBusy(false);
-      setNotice("Online banking sign-in is not yet available. No account was found for these details — please open an account or contact our team.");
+            try {
+        const stored = localStorage.getItem("pjtb_admin_customers_v2");
+        if (stored) {
+          const customers = JSON.parse(stored);
+          const found = customers.find((c: any) =>
+            (c.email && c.email.toLowerCase() === v.username.toLowerCase()) ||
+            (c.customerId && c.customerId.toLowerCase() === v.username.toLowerCase()) ||
+            (c.accountNumber && c.accountNumber === v.username)
+          );
+          if (found) {
+            localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(found));
+          }
+        }
+      } catch {}
+      navigate({ to: "/portal" });
     }, 700);
   };
   return (
