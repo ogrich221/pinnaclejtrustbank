@@ -52,12 +52,12 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
 
   const [type, setType] = useState<"Credit" | "Debit">(initialType);
   const [amount, setAmount] = useState<string>("");
-  const [date, setDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState<string>(() => {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   });
-  const [narration, setNarration] = useState<string>(PRESET_NARRATIONS[initialType][0]);
+  const [narration, setNarration] = useState<string>(PRESET_NARRATIONS[initialType][0] ?? "");
   const [counterparty, setCounterparty] = useState<string>(
     initialType === "Credit" ? "Federal Reserve Wire Network" : "Barclays Commercial Clearing UK"
   );
@@ -153,7 +153,7 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
                 type="button"
                 onClick={() => {
                   setType("Credit");
-                  setNarration(PRESET_NARRATIONS.Credit[0]);
+                  setNarration(PRESET_NARRATIONS.Credit[0] ?? "");
                   setCategory("Fedwire Domestic");
                   setCounterparty("Federal Reserve Wire Network");
                 }}
@@ -170,7 +170,7 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
                 type="button"
                 onClick={() => {
                   setType("Debit");
-                  setNarration(PRESET_NARRATIONS.Debit[0]);
+                  setNarration(PRESET_NARRATIONS.Debit[0] ?? "");
                   setCategory("Outbound SWIFT");
                   setCounterparty("Barclays Commercial Clearing UK");
                 }}

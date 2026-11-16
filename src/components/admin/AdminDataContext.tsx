@@ -8,6 +8,8 @@ import {
   CustomerAccountStatus,
   VerificationStatus,
   AdministrativeNote,
+  CreditDebitParams,
+  EditTransactionParams,
 } from "./types";
 import {
   INITIAL_CUSTOMERS,
@@ -622,10 +624,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       title: `Account ${params.type}ed: ${target.fullName}`,
       message: `${target.fullName} (${target.customerId}) ${params.type.toLowerCase()}ed with ${target.currency} ${amt.toLocaleString("en-US", { minimumFractionDigits: 2 })}. Narration: "${params.narration}". Balance now: ${target.currency} ${newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}.`,
       timestamp: "Just now",
-      read: false,
+      isRead: false,
       severity: "Info",
       category: "Transaction",
-      actionLink: newTx.reference,
+      actionUrl: newTx.reference,
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
