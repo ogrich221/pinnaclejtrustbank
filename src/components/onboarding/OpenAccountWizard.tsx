@@ -399,7 +399,7 @@ export const OpenAccountWizard: React.FC = () => {
           action: "NEW_ACCOUNT_APPLICATION",
           targetType: "Customer",
           targetId: newCustomer.customerId,
-          details: Application submitted for  (). Opening balance: 0.00.,
+          details: `Application submitted for ${newCustomer.fullName} (${newCustomer.customerId}). Opening balance: 0.00.`,
           reason: "Online account registration completed by customer",
           ipAddress: "Customer Remote IP",
           severity: "Info",
