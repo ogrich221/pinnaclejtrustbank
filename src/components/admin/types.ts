@@ -36,9 +36,19 @@ export interface VerificationDocument {
   submittedAt: string;
 }
 
+export interface CustomerBeneficiary {
+  id: string;
+  name: string;
+  bankName: string;
+  accountNumber: string;
+  swiftBic?: string;
+  country: string;
+  type: "Domestic" | "International";
+}
+
 export interface SecurityEvent {
   id: string;
-  type: "Login" | "Password Change" | "2FA Verification" | "Device Authorized" | "Failed Attempt" | "IP Change";
+  type: "Login" | "Password Change" | "PIN Change" | "2FA Verification" | "Device Authorized" | "Failed Attempt" | "IP Change" | "Profile Update" | "Beneficiary Added" | "Beneficiary Removed";
   ipAddress: string;
   location: string;
   device: string;
@@ -80,6 +90,8 @@ export interface CustomerRecord {
   holdBalance?: number;
   dateOpened?: string;
   twoFactorEnabled?: boolean;
+  beneficiaries?: CustomerBeneficiary[];
+  transferPinChangedAt?: string;
 }
 
 export type TransactionType =

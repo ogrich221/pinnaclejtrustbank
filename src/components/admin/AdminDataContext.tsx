@@ -388,14 +388,6 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-    } catch {
-      // ignore
-    }
-  }, [transactions]);
-
-  useEffect(() => {
-    try {
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
     } catch {
       // ignore

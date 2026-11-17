@@ -245,9 +245,13 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
         <div className="border-b border-ivory/10 bg-navy/60 p-6 backdrop-blur-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/20 to-navy-deep text-2xl font-display font-bold text-gold shadow-md">
-                {customer.initials}
-              </div>
+              {customer.avatarUrl ? (
+                <img src={customer.avatarUrl} alt={customer.fullName} className="h-16 w-16 rounded-2xl border border-gold/40 object-cover shadow-md" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/20 to-navy-deep text-2xl font-display font-bold text-gold shadow-md">
+                  {customer.initials}
+                </div>
+              )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-2xl font-display font-semibold tracking-wide text-ivory">
@@ -340,6 +344,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
+                aria-label="Close customer profile"
                 className="rounded-xl border border-ivory/15 p-2 text-ivory/60 hover:bg-ivory/10 hover:text-ivory transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -884,6 +889,27 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                     <p className="mt-1 font-semibold text-ivory">{customer.jurisdiction} Clearing Office</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-ivory/10 bg-navy/40 p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-gold">Customer-Saved Beneficiaries</h4>
+                  <span className="text-xs text-ivory/50">{(customer.beneficiaries || []).length} saved</span>
+                </div>
+                {(customer.beneficiaries || []).length === 0 ? (
+                  <p className="mt-4 text-xs text-ivory/50">No beneficiaries have been added from the customer portal.</p>
+                ) : (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {(customer.beneficiaries || []).map((beneficiary) => (
+                      <div key={beneficiary.id} className="rounded-xl border border-ivory/10 bg-navy-deep/60 p-4 text-xs">
+                        <p className="font-semibold text-ivory">{beneficiary.name}</p>
+                        <p className="mt-1 text-ivory/60">{beneficiary.bankName} · {beneficiary.country}</p>
+                        <p className="mt-1 font-mono text-gold">{beneficiary.accountNumber}</p>
+                        <p className="mt-1 text-[10px] uppercase tracking-wider text-ivory/40">{beneficiary.type}{beneficiary.swiftBic ? ` · ${beneficiary.swiftBic}` : ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

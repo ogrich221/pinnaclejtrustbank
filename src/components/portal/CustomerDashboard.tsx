@@ -40,15 +40,80 @@ import {
 import { LogoMark } from "@/components/site/Logo";
 import { toast } from "sonner";
 import { getTransferValidationError, mapAdminTransactionStatus } from "@/lib/banking";
+import type { CustomerBeneficiary, SecurityEvent } from "@/components/admin/types";
 
-interface Beneficiary {
-  id: string;
-  name: string;
-  bankName: string;
-  accountNumber: string;
-  swiftBic?: string;
-  country: string;
-  type: "Domestic" | "International";
+type Beneficiary = CustomerBeneficiary;
+
+function notifyAdminSync(detail: Record<string, string> = {}) {
+  window.dispatchEvent(new Event("storage"));
+  window.dispatchEvent(new CustomEvent("pjtb_sync"));
+  if (typeof BroadcastChannel !== "undefined") {
+    const channel = new BroadcastChannel("pjtb_sync_channel");
+    channel.postMessage(detail);
+    channel.close();
+  }
+}
+
+function syncCustomerAction(
+  customer: any,
+  changes: Record<string, unknown>,
+  activity?: { content: string; type: SecurityEvent["type"]; status?: SecurityEvent["status"] }
+) {
+  try {
+    const stored = localStorage.getItem("pjtb_admin_customers_v3");
+    if (!stored) return;
+    const list = JSON.parse(stored);
+    if (!Array.isArray(list)) return;
+    const index = list.findIndex((record: any) =>
+      record.id === customer.id ||
+      record.customerId === customer.customerId ||
+      (record.email && customer.email && record.email.toLowerCase() === customer.email.toLowerCase())
+    );
+    if (index < 0) return;
+
+    const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19);
+    const nextRecord = { ...list[index], ...changes };
+    if (activity) {
+      nextRecord.notes = [{
+        id: `note-${Date.now()}`,
+        authorName: customer.fullName,
+        authorRole: "Customer",
+        timestamp,
+        content: activity.content,
+        category: "Security",
+      }, ...(list[index].notes || [])];
+      nextRecord.securityHistory = [{
+        id: `sec-${Date.now()}`,
+        type: activity.type,
+        ipAddress: "Current browser session",
+        location: "Online Banking Portal",
+        device: navigator.userAgent,
+        timestamp,
+        status: activity.status || "Success",
+      }, ...(list[index].securityHistory || [])];
+    }
+    list[index] = nextRecord;
+    localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
+    notifyAdminSync({ source: "customer-action" });
+  } catch {
+    // The portal remains usable if browser storage is unavailable.
+  }
+}
+
+function getPinStorageKey(customer: any): string {
+  return `pjtb_portal_transfer_pin_${customer?.id || customer?.customerId || "PJ-89201"}`;
+}
+
+async function hashTransferPin(pin: string): Promise<string> {
+  const bytes = new TextEncoder().encode(pin);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyTransferPin(customer: any, pin: string): Promise<boolean> {
+  const storedHash = localStorage.getItem(getPinStorageKey(customer));
+  if (!storedHash) return pin === "123456";
+  return await hashTransferPin(pin) === storedHash;
 }
 
 interface PortalTransaction {
@@ -132,8 +197,7 @@ export const CustomerDashboard: React.FC = () => {
             if (idx >= 0) {
               list[idx].avatarUrl = dataUrl;
               localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
-              window.dispatchEvent(new Event("storage"));
-              window.dispatchEvent(new CustomEvent("pjtb_sync"));
+              notifyAdminSync({ source: "customer-profile-photo" });
             }
           }
         } catch {}
@@ -371,6 +435,131 @@ export const CustomerDashboard: React.FC = () => {
 
   // Transfer Receipt Modal
   const [receiptData, setReceiptData] = useState<any | null>(null);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [hasCustomPin, setHasCustomPin] = useState(() => {
+    try {
+      return Boolean(localStorage.getItem(getPinStorageKey(customer)));
+    } catch {
+      return false;
+    }
+  });
+  const [beneficiaryModalOpen, setBeneficiaryModalOpen] = useState(false);
+  const [beneficiaryForm, setBeneficiaryForm] = useState({
+    name: "",
+    bankName: "",
+    accountNumber: "",
+    swiftBic: "",
+    country: "United States",
+    type: "Domestic" as Beneficiary["type"],
+    pin: "",
+  });
+  const [pinChangeOpen, setPinChangeOpen] = useState(false);
+  const [pinChangeForm, setPinChangeForm] = useState({ currentPin: "", newPin: "", confirmPin: "" });
+  const [isChangingPin, setIsChangingPin] = useState(false);
+
+  const persistBeneficiaries = (updated: Beneficiary[]) => {
+    const keys = new Set([
+      `pjtb_portal_beneficiaries_${customer.customerId || customer.id}`,
+      `pjtb_portal_beneficiaries_${customer.id || customer.customerId}`,
+    ]);
+    keys.forEach((key) => localStorage.setItem(key, JSON.stringify(updated)));
+  };
+
+  const handleAddBeneficiary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!beneficiaryForm.name.trim() || !beneficiaryForm.bankName.trim() || !beneficiaryForm.accountNumber.trim()) {
+      return void toast.error("Complete the beneficiary name, bank, and account number");
+    }
+    if (beneficiaryForm.type === "International" && !beneficiaryForm.swiftBic.trim()) {
+      return void toast.error("A SWIFT / BIC code is required for international beneficiaries");
+    }
+    if (!await verifyTransferPin(customer, beneficiaryForm.pin)) {
+      syncCustomerAction(customer, {}, { content: "Failed beneficiary PIN verification", type: "Failed Attempt", status: "Failed" });
+      return void toast.error("The transfer PIN is incorrect");
+    }
+
+    const beneficiary: Beneficiary = {
+      id: `beneficiary-${Date.now()}`,
+      name: beneficiaryForm.name.trim(),
+      bankName: beneficiaryForm.bankName.trim(),
+      accountNumber: beneficiaryForm.accountNumber.trim(),
+      country: beneficiaryForm.country,
+      type: beneficiaryForm.type,
+      ...(beneficiaryForm.swiftBic.trim() ? { swiftBic: beneficiaryForm.swiftBic.trim().toUpperCase() } : {}),
+    };
+    const updated = [beneficiary, ...beneficiaries];
+    setBeneficiaries(updated);
+    persistBeneficiaries(updated);
+    syncCustomerAction(customer, { beneficiaries: updated }, {
+      content: `Customer added ${beneficiary.type.toLowerCase()} beneficiary ${beneficiary.name}`,
+      type: "Beneficiary Added",
+    });
+    setBeneficiaryModalOpen(false);
+    setBeneficiaryForm({ name: "", bankName: "", accountNumber: "", swiftBic: "", country: "United States", type: "Domestic", pin: "" });
+    toast.success("Beneficiary verified and saved");
+  };
+
+  const handleRemoveBeneficiary = (beneficiary: Beneficiary) => {
+    const updated = beneficiaries.filter((item) => item.id !== beneficiary.id);
+    setBeneficiaries(updated);
+    persistBeneficiaries(updated);
+    syncCustomerAction(customer, { beneficiaries: updated }, {
+      content: `Customer removed beneficiary ${beneficiary.name}`,
+      type: "Beneficiary Removed",
+    });
+    toast.info("Beneficiary removed from whitelist");
+  };
+
+  const handleChangePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(pinChangeForm.newPin)) return void toast.error("The new PIN must contain exactly six digits");
+    if (pinChangeForm.newPin !== pinChangeForm.confirmPin) return void toast.error("The new PIN confirmation does not match");
+    setIsChangingPin(true);
+    try {
+      if (!await verifyTransferPin(customer, pinChangeForm.currentPin)) {
+        syncCustomerAction(customer, {}, { content: "Failed current-PIN verification during PIN change", type: "Failed Attempt", status: "Failed" });
+        return void toast.error("The current transfer PIN is incorrect");
+      }
+      const hash = await hashTransferPin(pinChangeForm.newPin);
+      localStorage.setItem(getPinStorageKey(customer), hash);
+      setHasCustomPin(true);
+      const changedAt = new Date().toISOString();
+      syncCustomerAction(customer, { transferPinChangedAt: changedAt }, {
+        content: "Customer changed the transfer authorization PIN",
+        type: "PIN Change",
+      });
+      setPinChangeOpen(false);
+      setPinChangeForm({ currentPin: "", newPin: "", confirmPin: "" });
+      toast.success("Transfer PIN updated successfully");
+    } finally {
+      setIsChangingPin(false);
+    }
+  };
+
+  const exportStatement = () => {
+    const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = [
+      ["Reference", "Date", "Description", "Category", "Currency", "Amount", "Status", "Counterparty"],
+      ...transactions.map((transaction) => [
+        transaction.reference,
+        transaction.date,
+        transaction.description,
+        transaction.category,
+        transaction.currency,
+        transaction.amount.toFixed(2),
+        transaction.status,
+        transaction.counterparty,
+      ]),
+    ];
+    const csv = rows.map((row) => row.map(escape).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${customer.customerId}-statement.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success("Account statement downloaded");
+  };
 
   const validateTransfer = (amount: number, fee = 0) => {
     const today = new Date().toISOString().slice(0, 10);
@@ -455,14 +644,28 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   // Execute transfer after PIN verified
-  const handleConfirmPin = (e: React.FormEvent) => {
+  const handleConfirmPin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAuthorizing) return;
     if (pinInput.length !== 6) return void toast.error("PIN must be exactly 6 digits");
     if (!pendingTransfer) return;
     const validationError = validateTransfer(pendingTransfer.amount, pendingTransfer.fee);
     if (validationError) {
       setPinModalOpen(false);
       return void toast.error(validationError);
+    }
+
+    setIsAuthorizing(true);
+    let pinValid = false;
+    try {
+      pinValid = await verifyTransferPin(customer, pinInput);
+    } catch {
+      pinValid = false;
+    }
+    if (!pinValid) {
+      setIsAuthorizing(false);
+      syncCustomerAction(customer, {}, { content: "Failed transfer PIN verification", type: "Failed Attempt", status: "Failed" });
+      return void toast.error("The transfer PIN is incorrect");
     }
 
     const amt = pendingTransfer?.amount || 0;
@@ -562,8 +765,7 @@ export const CustomerDashboard: React.FC = () => {
       });
       localStorage.setItem("pjtb_admin_transactions_v3", JSON.stringify(adminTxList));
 
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+      notifyAdminSync({ source: "customer-transfer", transactionId: newTx.id });
     } catch {}
 
     setReceiptData({
@@ -579,6 +781,7 @@ export const CustomerDashboard: React.FC = () => {
     });
 
     setPinModalOpen(false);
+    setIsAuthorizing(false);
     toast.success("Transfer authorized & executed successfully", {
       description: `Reference: ${ref}. Receipt generated.`,
     });
@@ -1184,10 +1387,10 @@ export const CustomerDashboard: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => toast.success("PDF Monthly Account Statement downloaded successfully")}
+                onClick={exportStatement}
                 className="inline-flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-md"
               >
-                <Download className="h-4 w-4" /> Export Official Statement
+                <Download className="h-4 w-4" /> Export Statement (CSV)
               </button>
             </div>
 
@@ -1253,7 +1456,7 @@ export const CustomerDashboard: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => toast.info("New beneficiary creation requires 6-digit Transfer PIN verification")}
+                onClick={() => setBeneficiaryModalOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-semibold text-navy-deep hover:bg-gold-soft transition-all"
               >
                 <Plus className="h-4 w-4" /> Add Beneficiary
@@ -1283,15 +1486,7 @@ export const CustomerDashboard: React.FC = () => {
                     <div className="pt-2 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => {
-                          const updated = beneficiaries.filter((item) => item.id !== b.id);
-                          setBeneficiaries(updated);
-                          const targetId = customer.customerId || customer.id;
-                          try {
-                            localStorage.setItem(`pjtb_portal_beneficiaries_${targetId}`, JSON.stringify(updated));
-                          } catch {}
-                          toast.info("Beneficiary removed from whitelist");
-                        }}
+                        onClick={() => handleRemoveBeneficiary(b)}
                         className="text-ivory/40 hover:text-red-400 p-1"
                         title="Remove beneficiary"
                       >
@@ -1322,9 +1517,10 @@ export const CustomerDashboard: React.FC = () => {
                 <p className="text-xs text-ivory/60">
                   Your private six-digit PIN authorizes high-value transfers. Never disclosed to bank administrators.
                 </p>
+                {!hasCustomPin && <p className="text-xs font-mono text-gold">Initial browser PIN: 123456</p>}
                 <button
                   type="button"
-                  onClick={() => toast.info("Transfer PIN update requires authenticated recovery verification")}
+                  onClick={() => setPinChangeOpen(true)}
                   className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25"
                 >
                   Change Transfer PIN
@@ -1476,6 +1672,75 @@ export const CustomerDashboard: React.FC = () => {
         )}
       </div>
 
+      {/* ADD VERIFIED BENEFICIARY */}
+      {beneficiaryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-deep/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-3xl border border-gold/40 bg-navy p-6 text-ivory shadow-2xl">
+            <h3 className="text-2xl font-display font-bold">Add Verified Beneficiary</h3>
+            <p className="mt-1 text-xs text-ivory/60">Verify with your transfer PIN. Administrators will see the saved beneficiary in your customer record.</p>
+            <form onSubmit={handleAddBeneficiary} className="mt-5 space-y-4 text-xs">
+              <label className="block">Beneficiary Type
+                <select value={beneficiaryForm.type} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, type: e.target.value as Beneficiary["type"] })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5">
+                  <option value="Domestic">Domestic</option>
+                  <option value="International">International</option>
+                </select>
+              </label>
+              <label className="block">Beneficiary Full Name
+                <input required value={beneficiaryForm.name} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, name: e.target.value })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5" />
+              </label>
+              <label className="block">Bank Name
+                <input required value={beneficiaryForm.bankName} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, bankName: e.target.value })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5" />
+              </label>
+              <label className="block">Account Number / IBAN
+                <input required value={beneficiaryForm.accountNumber} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, accountNumber: e.target.value })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5 font-mono" />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">Country
+                  <input required value={beneficiaryForm.country} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, country: e.target.value })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5" />
+                </label>
+                <label className="block">SWIFT / BIC {beneficiaryForm.type === "International" ? "(Required)" : "(Optional)"}
+                  <input required={beneficiaryForm.type === "International"} value={beneficiaryForm.swiftBic} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, swiftBic: e.target.value.toUpperCase() })} className="mt-1.5 w-full rounded-xl border border-ivory/20 bg-navy-deep px-3 py-2.5 font-mono" />
+                </label>
+              </div>
+              <label className="block">6-Digit Transfer PIN
+                <input type="password" inputMode="numeric" maxLength={6} required value={beneficiaryForm.pin} onChange={(e) => setBeneficiaryForm({ ...beneficiaryForm, pin: e.target.value.replace(/\D/g, "") })} className="mt-1.5 w-full rounded-xl border border-gold/40 bg-navy-deep px-3 py-2.5 text-center font-mono tracking-[0.5em]" />
+              </label>
+              {!hasCustomPin && <p className="text-xs font-mono text-gold">Initial browser PIN: 123456</p>}
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setBeneficiaryModalOpen(false)} className="rounded-xl border border-ivory/20 px-4 py-2.5">Cancel</button>
+                <button type="submit" className="rounded-xl bg-gold px-5 py-2.5 font-bold text-navy-deep">Verify & Save Beneficiary</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE TRANSFER PIN */}
+      {pinChangeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-navy-deep/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-3xl border border-gold/40 bg-navy p-6 text-ivory shadow-2xl">
+            <h3 className="text-2xl font-display font-bold">Change Transfer PIN</h3>
+            <p className="mt-1 text-xs text-ivory/60">Your PIN is stored only as a cryptographic hash in this browser. Only the change event is visible to administrators.</p>
+            <form onSubmit={handleChangePin} className="mt-5 space-y-4 text-xs">
+              {([
+                ["Current Transfer PIN", "currentPin"],
+                ["New 6-Digit PIN", "newPin"],
+                ["Confirm New PIN", "confirmPin"],
+              ] as const).map(([label, field]) => (
+                <label key={field} className="block">{label}
+                  <input type="password" inputMode="numeric" maxLength={6} required value={pinChangeForm[field]} onChange={(e) => setPinChangeForm({ ...pinChangeForm, [field]: e.target.value.replace(/\D/g, "") })} className="mt-1.5 w-full rounded-xl border border-gold/40 bg-navy-deep px-3 py-2.5 text-center font-mono tracking-[0.5em]" />
+                </label>
+              ))}
+              {!hasCustomPin && <p className="text-xs font-mono text-gold">Initial current PIN: 123456</p>}
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setPinChangeOpen(false)} className="rounded-xl border border-ivory/20 px-4 py-2.5">Cancel</button>
+                <button type="submit" disabled={isChangingPin} className="rounded-xl bg-gold px-5 py-2.5 font-bold text-navy-deep disabled:opacity-50">{isChangingPin ? "Updating..." : "Update PIN"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* PRE-AUTHORIZATION TRANSFER CONFIRMATION & DETAILS PREVIEW MODAL */}
       {previewModalOpen && pendingTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
@@ -1626,10 +1891,10 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={pinInput.length !== 6}
+                  disabled={pinInput.length !== 6 || isAuthorizing}
                   className="flex-1 rounded-xl bg-gold py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft disabled:opacity-40"
                 >
-                  Confirm & Transfer
+                  {isAuthorizing ? "Verifying..." : "Confirm & Transfer"}
                 </button>
               </div>
             </form>
