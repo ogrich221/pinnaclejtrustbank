@@ -32,7 +32,7 @@ interface CustomerManagementProps {
 }
 
 export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialFilter = "All" }) => {
-  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount, deleteCustomer } = useAdminData();
+  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount, deleteCustomer, refreshAllData } = useAdminData();
 
   // Search & Filter state
   const [filterTab, setFilterTab] = useState<string>(initialFilter);
@@ -40,6 +40,12 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+
+  // Sync filterTab when initialFilter prop changes (e.g. from sidebar view switch)
+  React.useEffect(() => {
+    setFilterTab(initialFilter);
+    setCurrentPage(1);
+  }, [initialFilter]);
 
   // Active Menu / Modals state
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -95,7 +101,9 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
       if (sortField === "name") {
         comp = a.fullName.localeCompare(b.fullName);
       } else if (sortField === "date") {
-        comp = new Date(a.registrationDate).getTime() - new Date(b.registrationDate).getTime();
+        const timeA = a.registrationDate ? new Date(a.registrationDate).getTime() : 0;
+        const timeB = b.registrationDate ? new Date(b.registrationDate).getTime() : 0;
+        comp = (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
       } else if (sortField === "status") {
         comp = a.accountStatus.localeCompare(b.accountStatus);
       } else if (sortField === "verification") {
@@ -151,7 +159,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
           </p>
         </div>
 
-        {/* Global Search inside view */}
+        {/* Global Search & Sync inside view */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ivory/50" />
@@ -163,9 +171,20 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                 setGlobalSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-xl border border-ivory/15 bg-white/[0.05] pl-10 pr-4 py-2 text-xs text-ivory placeholder:text-ivory/40 focus:border-gold focus:outline-none w-64 md:w-80 backdrop-blur-md"
+              className="rounded-xl border border-ivory/15 bg-white/[0.05] pl-10 pr-4 py-2 text-xs text-ivory placeholder:text-ivory/40 focus:border-gold focus:outline-none w-60 sm:w-72 backdrop-blur-md"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              refreshAllData();
+            }}
+            className="rounded-xl border border-gold/40 bg-gold/15 px-3 py-2 text-xs font-semibold text-gold hover:bg-gold/25 transition-all flex items-center gap-1.5 shadow-sm shrink-0"
+            title="Synchronize registry with latest registrations"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Sync Registry</span>
+          </button>
         </div>
       </div>
 

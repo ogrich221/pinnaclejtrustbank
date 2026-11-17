@@ -301,16 +301,23 @@ export const OpenAccountWizard: React.FC = () => {
 
     // Save into Admin Customers Registry as "Pending Review" so the single Administrator can inspect & approve!
     try {
+      const cleanFirst = (form.firstName || "").trim();
+      const cleanLast = (form.lastName || "").trim();
+      const init1 = (cleanFirst[0] || "U").toUpperCase();
+      const init2 = (cleanLast[0] || "C").toUpperCase();
+      const initials = `${init1}${init2}`;
+
       const existing = localStorage.getItem("pjtb_admin_customers_v3") || localStorage.getItem("pjtb_admin_customers_v2");
-      const list = existing ? JSON.parse(existing) : [];
+      let list = existing ? JSON.parse(existing) : [];
+      if (!Array.isArray(list)) list = [];
 
       const newCustomer = {
         id: `cust-${Date.now()}`,
         customerId: `PJ-${Math.floor(89200 + Math.random() * 800)}`,
-        fullName: `${form.firstName} ${form.lastName}`,
-        initials: `${form.firstName[0]}${form.lastName[0]}`.toUpperCase(),
-        email: form.email,
-        phone: `${form.phoneCountryCode} ${form.phoneNumber}`,
+        fullName: `${cleanFirst} ${cleanLast}`,
+        initials,
+        email: form.email.trim(),
+        phone: `${form.phoneCountryCode} ${form.phoneNumber}`.trim(),
         accountNumber: `PJTB-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`,
         maskedAccountNumber: `PJTB-••••-${Math.floor(1000 + Math.random() * 9000)}`,
         accountType: form.accountType,
@@ -324,10 +331,10 @@ export const OpenAccountWizard: React.FC = () => {
         accountStatus: "Pending",
         lastLogin: "Pending first session",
         address: {
-          street: form.residentialAddress,
-          city: form.city,
-          postalCode: form.postalCode,
-          country: form.countryOfResidence,
+          street: form.residentialAddress.trim(),
+          city: form.city.trim(),
+          postalCode: form.postalCode.trim(),
+          country: form.countryOfResidence.trim(),
         },
         notes: [
           {
@@ -363,11 +370,12 @@ export const OpenAccountWizard: React.FC = () => {
         ],
       };
 
-      list.unshift(newCustomer);
+      list = [newCustomer, ...list.filter((c: any) => c.id !== newCustomer.id && c.customerId !== newCustomer.customerId && (!c.email || c.email.toLowerCase() !== newCustomer.email.toLowerCase()))];
       localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
 
-      // Also persist the customer for the online banking portal session
+      // Also persist the customer for the online banking portal session and pending registration backup
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
+      localStorage.setItem("pjtb_pending_registration", JSON.stringify(newCustomer));
       
       // Initialize zero transaction history for the new user profile
       localStorage.setItem(`pjtb_portal_tx_${newCustomer.customerId}`, JSON.stringify([]));
@@ -412,12 +420,21 @@ export const OpenAccountWizard: React.FC = () => {
         localStorage.setItem(auditKey, JSON.stringify(logs));
       } catch {}
 
+      // Modern BroadcastChannel for instant cross-tab notification to Admin dashboard
+      try {
+        if (typeof BroadcastChannel !== "undefined") {
+          const bc = new BroadcastChannel("pjtb_sync_channel");
+          bc.postMessage({ type: "NEW_CUSTOMER", customer: newCustomer });
+          bc.close();
+        }
+      } catch {}
+
       try {
         window.dispatchEvent(new Event("storage"));
         window.dispatchEvent(new CustomEvent("pjtb_sync"));
       } catch {}
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("Account registration error:", err);
     }
 
     setCurrentStep(7);

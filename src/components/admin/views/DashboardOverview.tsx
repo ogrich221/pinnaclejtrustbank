@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Users,
   ShieldCheck,
@@ -12,20 +12,26 @@ import {
   FileCheck2,
   Lock,
   ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ANALYTICS_TREND_DATA } from "../mockData";
+import { CustomerProfileModal } from "./CustomerProfileModal";
+import { CustomerRecord } from "../types";
 
 export const DashboardOverview: React.FC = () => {
-  const { customers, transactions, auditLogs, setCurrentView, setSelectedCustomerId } = useAdminData();
+  const { customers, transactions, auditLogs, setCurrentView, setSelectedCustomerId, approveCustomerAccount } = useAdminData();
+  const [selectedCustomerForModal, setSelectedCustomerForModal] = useState<CustomerRecord | null>(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // Metrics computation from real live state
   const totalCustomersCount = customers.length;
   const activeAccountsCount = customers.filter((c) => c.accountStatus === "Active").length;
-  const pendingVerificationCount = customers.filter(
+  const pendingCustomers = customers.filter(
     (c) => c.verificationStatus === "Pending" || c.accountStatus === "Pending"
-  ).length;
+  );
+  const pendingVerificationCount = pendingCustomers.length;
   const restrictedAccountsCount = customers.filter(
     (c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended"
   ).length;
@@ -169,6 +175,83 @@ export const DashboardOverview: React.FC = () => {
         })}
       </div>
 
+      {/* Actionable Pending Applications Queue */}
+      {pendingCustomers.length > 0 && (
+        <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-gold/15 via-[#0C1B30] to-gold/5 p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-4 animate-in fade-in duration-300">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold text-navy-deep font-bold shadow-md">
+                <FileCheck2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-display font-bold text-ivory">
+                  New Customer Applications Awaiting Approval ({pendingCustomers.length})
+                </h3>
+                <p className="text-xs text-ivory/70">
+                  Review applicant credentials and click &quot;Approve Account&quot; to activate with $0.00 opening balance.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentView("pending-verification")}
+              className="text-xs text-gold hover:underline font-semibold flex items-center gap-1"
+            >
+              View in Registry <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-ivory/10 rounded-2xl border border-ivory/10 bg-navy-deep/60 overflow-hidden">
+            {pendingCustomers.map((pc) => (
+              <div key={pc.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors">
+                <div className="flex items-center gap-3.5">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/40 bg-gold/15 text-sm font-bold text-gold font-display shrink-0">
+                    {pc.initials}
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-sm text-ivory">{pc.fullName}</p>
+                      <span className="rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
+                        Awaiting Approval
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ivory/60 font-mono mt-0.5">
+                      <span>ID: <strong className="text-ivory">{pc.customerId}</strong></span>
+                      <span>•</span>
+                      <span>{pc.accountNumber}</span>
+                      <span>•</span>
+                      <span>{pc.accountType} ({pc.currency})</span>
+                      <span>•</span>
+                      <span>{pc.email}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => approveCustomerAccount(pc.id)}
+                    className="rounded-xl border border-emerald-500 bg-emerald-500/20 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCustomerForModal(pc);
+                      setProfileModalOpen(true);
+                    }}
+                    className="rounded-xl border border-ivory/20 px-3.5 py-2 text-xs text-ivory/70 hover:bg-ivory/10 transition-colors"
+                  >
+                    Inspect Profile
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Analytics Chart & Live Transaction Stream Grid */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Transaction Volume Trend Chart (7 cols) */}
@@ -287,6 +370,21 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Inspect Customer Profile Modal */}
+      {profileModalOpen && selectedCustomerForModal && (
+        <CustomerProfileModal
+          customer={selectedCustomerForModal}
+          initialTab="profile"
+          onClose={() => {
+            setProfileModalOpen(false);
+            setSelectedCustomerForModal(null);
+          }}
+          onOpenStatusAction={() => {
+            setProfileModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

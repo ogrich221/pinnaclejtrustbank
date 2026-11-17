@@ -65,6 +65,9 @@ export const AdminLayout: React.FC = () => {
   const [currentTimeStr, setCurrentTimeStr] = useState("");
 
   const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
+  const pendingVerificationCount = customers.filter(
+    (c) => c.accountStatus === "Pending" || c.verificationStatus === "Pending"
+  ).length;
 
   useEffect(() => {
     const updateTime = () => {
@@ -222,6 +225,12 @@ export const AdminLayout: React.FC = () => {
                         {item.id === "notifications" && unreadNotifsCount > 0 && (
                           <span className="ml-auto rounded-full bg-gold px-1.5 py-0.2 text-[9px] font-bold text-navy-deep">
                             {unreadNotifsCount}
+                          </span>
+                        )}
+
+                        {item.id === "pending-verification" && pendingVerificationCount > 0 && (
+                          <span className="ml-auto rounded-full bg-gold px-2 py-0.5 text-[9px] font-bold text-navy-deep shadow-sm">
+                            {pendingVerificationCount} New
                           </span>
                         )}
 
@@ -434,6 +443,7 @@ export const AdminLayout: React.FC = () => {
                 currentView === "restricted-accounts" ||
                 currentView === "suspended-accounts") && (
                 <CustomerManagement
+                  key={currentView}
                   initialFilter={
                     currentView === "active-accounts"
                       ? "Active"

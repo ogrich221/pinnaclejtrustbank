@@ -85,6 +85,7 @@ interface AdminDataContextType {
   creditDebitCustomer: (params: CreditDebitParams) => void;
   editTransaction: (params: EditTransactionParams) => void;
   resetToDefaults: () => void;
+  refreshAllData: () => void;
 }
 
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
@@ -100,7 +101,36 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [customers, setCustomers] = useState<CustomerRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-      return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
+      let list: CustomerRecord[] = saved ? JSON.parse(saved) : [...INITIAL_CUSTOMERS];
+
+      // Check if newly created customer in portal session or pending registration exists
+      const checkKeys = ["pjtb_current_portal_customer", "pjtb_pending_registration"];
+      let merged = false;
+      checkKeys.forEach((key) => {
+        const itemStr = localStorage.getItem(key);
+        if (itemStr) {
+          try {
+            const c = JSON.parse(itemStr);
+            if (c && (c.id || c.customerId)) {
+              const exists = list.some(
+                (existing) =>
+                  existing.id === c.id ||
+                  existing.customerId === c.customerId ||
+                  (existing.email && c.email && existing.email.toLowerCase() === c.email.toLowerCase())
+              );
+              if (!exists) {
+                list = [c, ...list];
+                merged = true;
+              }
+            }
+          } catch {}
+        }
+      });
+
+      if (merged) {
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(list));
+      }
+      return list;
     } catch {
       return INITIAL_CUSTOMERS;
     }
@@ -201,9 +231,20 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const activeAdmin: AdministratorProfile = INITIAL_ADMIN;
 
-  // Persistence
+  // Persistence with protection against overwriting newly created accounts from other tabs
   useEffect(() => {
     try {
+      const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+      if (stored) {
+        const storedList: CustomerRecord[] = JSON.parse(stored);
+        const missingInState = storedList.filter(
+          (sc) => !customers.some((c) => c.id === sc.id || c.customerId === sc.customerId)
+        );
+        if (missingInState.length > 0) {
+          setCustomers((prev) => [...missingInState, ...prev]);
+          return;
+        }
+      }
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
     } catch {
       // ignore
@@ -235,26 +276,80 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [notifications]);
 
   // Reactive cross-tab and cross-view synchronization listener
+  const handleSync = useCallback(() => {
+    try {
+      const storedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+      let list: CustomerRecord[] = storedCustomers ? JSON.parse(storedCustomers) : [];
+
+      const checkKeys = ["pjtb_current_portal_customer", "pjtb_pending_registration"];
+      let modified = false;
+      checkKeys.forEach((key) => {
+        const itemStr = localStorage.getItem(key);
+        if (itemStr) {
+          try {
+            const c = JSON.parse(itemStr);
+            if (c && (c.id || c.customerId)) {
+              const exists = list.some(
+                (existing) =>
+                  existing.id === c.id ||
+                  existing.customerId === c.customerId ||
+                  (existing.email && c.email && existing.email.toLowerCase() === c.email.toLowerCase())
+              );
+              if (!exists) {
+                list = [c, ...list];
+                modified = true;
+              }
+            }
+          } catch {}
+        }
+      });
+
+      if (modified) {
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(list));
+      }
+
+      if (list.length > 0) {
+        setCustomers(list);
+      }
+
+      const storedTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      if (storedTx) setTransactions(JSON.parse(storedTx));
+      const storedNotifs = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+      if (storedNotifs) setNotifications(JSON.parse(storedNotifs));
+      const storedLogs = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+      if (storedLogs) setAuditLogs(JSON.parse(storedLogs));
+    } catch {}
+  }, []);
+
   useEffect(() => {
-    const handleSync = () => {
-      try {
-        const storedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-        if (storedCustomers) setCustomers(JSON.parse(storedCustomers));
-        const storedTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-        if (storedTx) setTransactions(JSON.parse(storedTx));
-        const storedNotifs = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-        if (storedNotifs) setNotifications(JSON.parse(storedNotifs));
-        const storedLogs = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-        if (storedLogs) setAuditLogs(JSON.parse(storedLogs));
-      } catch {}
-    };
+    handleSync();
+
     window.addEventListener("storage", handleSync);
     window.addEventListener("pjtb_sync", handleSync);
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      try {
+        bc = new BroadcastChannel("pjtb_sync_channel");
+        bc.onmessage = () => {
+          handleSync();
+        };
+      } catch {}
+    }
+
+    const interval = setInterval(handleSync, 2000);
+
     return () => {
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("pjtb_sync", handleSync);
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
+      clearInterval(interval);
+      if (bc) bc.close();
     };
-  }, []);
+  }, [handleSync]);
 
   // Helper to log immutable audit entry
   const logAuditEntry = (
@@ -906,6 +1001,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         creditDebitCustomer,
         editTransaction,
         resetToDefaults,
+        refreshAllData: handleSync,
       }}
     >
       {children}
