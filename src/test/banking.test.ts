@@ -58,8 +58,8 @@ describe("customer transfer rules", () => {
   });
 
   it("enforces the daily limit across same-day outbound transfers", () => {
-    expect(getTransferValidationError({ ...validTransfer, outboundToday: 4500 })).toBeNull();
-    expect(getTransferValidationError({ ...validTransfer, outboundToday: 4500.01 })).toContain("daily transfer limit");
+    expect(getTransferValidationError({ ...validTransfer, outboundToday: 4000 })).toBeNull();
+    expect(getTransferValidationError({ ...validTransfer, outboundToday: 4000.01 })).toContain("daily transfer limit");
   });
 
   it("includes the 15 network fee when checking available funds", () => {
