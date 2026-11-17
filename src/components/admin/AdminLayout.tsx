@@ -57,7 +57,7 @@ export const AdminLayout: React.FC = () => {
     notifications,
     customers,
     activeAdmin,
-    resetToDefaults,
+    refreshAllData,
   } = useAdminData();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -361,7 +361,7 @@ export const AdminLayout: React.FC = () => {
             {/* Reload System Records */}
             <button
               type="button"
-              onClick={resetToDefaults}
+              onClick={refreshAllData}
               title="Reload system records"
               className="hidden md:flex rounded-full border border-ivory/15 bg-white/[0.04] p-2 text-ivory/60 hover:border-gold hover:text-gold transition-colors"
             >

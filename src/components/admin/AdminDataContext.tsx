@@ -77,7 +77,7 @@ interface AdminDataContextType {
   updateVerificationStatus: (
     customerId: string,
     docId: string,
-    newStatus: "Approved" | "Rejected",
+    newStatus: "Approved" | "Rejected" | "Pending Review",
     reason: string
   ) => void;
   addCustomerNote: (customerId: string, content: string, category: AdministrativeNote["category"]) => void;
@@ -632,7 +632,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateVerificationStatus = (
     customerId: string,
     docId: string,
-    newStatus: "Approved" | "Rejected",
+    newStatus: "Approved" | "Rejected" | "Pending Review",
     reason: string
   ) => {
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
