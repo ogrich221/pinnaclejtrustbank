@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { TransactionRecord, TransactionType, TransactionStatus } from "../types";
+import { EditTransactionModal } from "./EditTransactionModal";
 
 interface TransactionMonitoringProps {
   initialFilter?: string;
@@ -26,6 +27,10 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTx, setSelectedTx] = useState<TransactionRecord | null>(null);
   const [editingTx, setEditingTx] = useState<TransactionRecord | null>(null);
+
+  React.useEffect(() => {
+    setFilterType(initialFilter);
+  }, [initialFilter]);
 
   const filteredTransactions = useMemo(() => {
     if (!Array.isArray(transactions)) return [];
@@ -125,7 +130,7 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
             <tbody className="divide-y divide-ivory/5 text-ivory">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-xs text-ivory/50">
+                  <td colSpan={8} className="py-12 text-center text-xs text-ivory/50">
                     No transactions found matching the selected filter criteria.
                   </td>
                 </tr>
@@ -337,6 +342,13 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
             </div>
           </div>
         </div>
+      )}
+
+      {editingTx && (
+        <EditTransactionModal
+          transaction={editingTx}
+          onClose={() => setEditingTx(null)}
+        />
       )}
     </div>
   );

@@ -42,8 +42,22 @@ export const SecurityAuditView: React.FC = () => {
   }, [auditLogs, severityFilter, searchQuery]);
 
   const exportAuditLog = () => {
-    toast.success("Cryptographically signed audit log exported", {
-      description: `Generated SHA-256 verified package containing ${filteredLogs.length} audit entries.`,
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      entryCount: filteredLogs.length,
+      entries: filteredLogs,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `pjtb-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Audit log exported", {
+      description: `Downloaded ${filteredLogs.length} audit entries as JSON.`,
     });
   };
 
@@ -103,7 +117,7 @@ export const SecurityAuditView: React.FC = () => {
             <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Restricted Accounts</span>
             <AlertTriangle className="h-4 w-4 text-amber-400" />
           </div>
-          <p className="mt-2 text-2xl font-display font-bold text-amber-400">2 Enforced Holds</p>
+          <p className="mt-2 text-2xl font-display font-bold text-amber-400">{restrictedCount} Enforced Holds</p>
           <p className="mt-1 text-xs text-ivory/60 font-mono">Compliance reviews in progress</p>
         </div>
       </div>
