@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronLeft, ChevronRight, LogIn } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./Logo";
 import { LanguageSelector } from "./LanguageSelector";
@@ -94,14 +94,19 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
               Open an Account
             </Link>
           </div>
-          <button
-            className="text-ivory lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-ivory/15 bg-white/[0.04] p-2 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer"
-            onClick={() => setOpen(!open)}
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Link to="/login" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-gold/35 px-3 text-xs font-semibold text-gold transition-colors hover:bg-gold/10">
+              <LogIn className="h-4 w-4" /> Login
+            </Link>
+            <button
+              className="text-ivory min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-ivory/15 bg-white/[0.04] p-2 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer"
+              onClick={() => setOpen(!open)}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+            >
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ShieldCheck, HeartHandshake, Cpu, User, Briefcase, PiggyBank, Globe2, Smartphone, ArrowRight,
-  KeyRound, Fingerprint, BellRing, Activity, EyeOff, Headset, ArrowUpRight, ArrowDownLeft,
+  KeyRound, Fingerprint, BellRing, Activity, EyeOff, Headset, ArrowUpRight, ArrowDownLeft, LogIn,
 } from "lucide-react";
 import hero from "@/assets/hq-hero.jpg";
 import sunset from "@/assets/hq-sunset.jpg";
@@ -72,7 +72,8 @@ function Index() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link to="/open-account" className="btn-gold">Open an Account <ArrowRight className="h-4 w-4" /></Link>
-              <a href="#services" className="btn-outline-light">Explore Our Services</a>
+              <Link to="/login" className="btn-outline-light"><LogIn className="h-4 w-4" /> Login</Link>
+              <a href="#services" className="inline-flex min-h-12 items-center px-2 text-xs font-semibold tracking-[0.16em] text-ivory/80 underline-offset-8 transition-colors hover:text-gold hover:underline">EXPLORE OUR SERVICES</a>
             </div>
           </div>
         </div>

@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { saveCustomerCredentials } from "@/lib/customer-access";
 
 export interface OnboardingData {
   // Step 1: Personal Information
@@ -274,7 +275,7 @@ export const OpenAccountWizard: React.FC = () => {
         setCurrentStep((prev) => prev + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        submitApplication();
+        void submitApplication();
       }
     }
   };
@@ -286,7 +287,7 @@ export const OpenAccountWizard: React.FC = () => {
     }
   };
 
-  const submitApplication = () => {
+  const submitApplication = async () => {
     const ref = "PJ-APP-" + Math.floor(100000 + Math.random() * 900000);
     const dateStr = new Date().toLocaleDateString("en-US", {
       year: "numeric",
@@ -317,6 +318,7 @@ export const OpenAccountWizard: React.FC = () => {
         fullName: `${cleanFirst} ${cleanLast}`,
         initials,
         email: form.email.trim(),
+        username: form.username.trim(),
         phone: `${form.phoneCountryCode} ${form.phoneNumber}`.trim(),
         accountNumber: `PJTB-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`,
         maskedAccountNumber: `PJTB-••••-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -372,6 +374,7 @@ export const OpenAccountWizard: React.FC = () => {
 
       list = [newCustomer, ...list.filter((c: any) => c.id !== newCustomer.id && c.customerId !== newCustomer.customerId && (!c.email || c.email.toLowerCase() !== newCustomer.email.toLowerCase()))];
       localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
+      await saveCustomerCredentials(newCustomer, form.username, form.password);
 
       // Also persist the customer for the online banking portal session and pending registration backup
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
@@ -435,6 +438,10 @@ export const OpenAccountWizard: React.FC = () => {
       } catch {}
     } catch (err) {
       console.error("Account registration error:", err);
+      toast.error("We couldn't save your application and login credentials", {
+        description: "Please check your browser storage settings and submit again.",
+      });
+      return;
     }
 
     setCurrentStep(7);

@@ -60,7 +60,7 @@ export function SiteFooter() {
           <p className="text-sm">Insights and updates from Pinnacle J Trust Bank.</p>
           <form onSubmit={onSubmit} noValidate className="mt-4">
             <label htmlFor="nl" className="sr-only">Email address</label>
-            <input id="nl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" aria-invalid={!!error}
+            <input id="nl" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" aria-invalid={!!error} suppressHydrationWarning
               className="w-full border border-ivory/20 bg-transparent px-4 py-3 text-sm text-ivory placeholder:text-ivory/40 outline-none focus:border-gold" />
             {error && <p className="mt-2 text-xs text-destructive-foreground/90" role="alert">{error}</p>}
             <button type="submit" className="btn-gold mt-3 w-full">Subscribe</button>

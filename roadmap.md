@@ -1,5 +1,6 @@
 # Admin and customer portal verification
 
+- [x] Add prominent homepage login access and verify valid, invalid, and newly registered customer sign-ins.
 - [ ] Inventory and exercise every admin navigation item, filter, modal, and action.
 - [ ] Verify admin changes reach the matching customer portal: profile, status, verification, balances, transactions, limits, and deletion.
 - [ ] Verify every customer-originated action reaches admin where relevant: domestic/international transfers, beneficiaries, security/PIN changes, profile details, and session activity.

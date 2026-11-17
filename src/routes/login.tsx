@@ -5,6 +5,13 @@ import hero from "@/assets/hq-hero.jpg";
 import { Logo } from "@/components/site/Logo";
 import { Field } from "@/components/site/Field";
 import { loginSchema, toErrors, type FieldErrors } from "@/lib/validation";
+import { INITIAL_CUSTOMERS } from "@/components/admin/mockData";
+import {
+  findCustomerForLogin,
+  PREVIEW_LOGIN,
+  readCustomerCredentials,
+  verifyCustomerPassword,
+} from "@/lib/customer-access";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -28,31 +35,48 @@ function Login() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const submit = (e: FormEvent) => {
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setNotice("");
-    const r = loginSchema.safeParse(v);
-    if (!r.success) return setErrors(toErrors(r.error));
-    setErrors({}); setBusy(true);
-    setTimeout(() => {
+    const result = loginSchema.safeParse(v);
+    if (!result.success) {
+      setErrors(toErrors(result.error));
+      return;
+    }
+
+    setErrors({});
+    setBusy(true);
+    try {
+      const stored = localStorage.getItem("pjtb_admin_customers_v3");
+      const parsed = stored ? JSON.parse(stored) : null;
+      const customers = Array.isArray(parsed) ? parsed : INITIAL_CUSTOMERS;
+      const credentials = readCustomerCredentials();
+      const customer = findCustomerForLogin(customers, v.username, credentials);
+      const valid = customer ? await verifyCustomerPassword(customer, v.password, credentials) : false;
+
+      if (!customer || !valid) {
+        setNotice("The username or password is incorrect. Check your details and try again.");
+        return;
+      }
+
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(customer));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+      await navigate({ to: "/portal" });
+    } catch {
+      setNotice("We couldn't complete sign-in in this browser. Please try again.");
+    } finally {
       setBusy(false);
-            try {
-        const stored = localStorage.getItem("pjtb_admin_customers_v3") || localStorage.getItem("pjtb_admin_customers_v2");
-        if (stored) {
-          const customers = JSON.parse(stored);
-          const found = customers.find((c: any) =>
-            (c.email && c.email.toLowerCase() === v.username.toLowerCase()) ||
-            (c.customerId && c.customerId.toLowerCase() === v.username.toLowerCase()) ||
-            (c.accountNumber && c.accountNumber === v.username) || v.username.toLowerCase() === 'testrun'
-          );
-          if (found) {
-            localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(found));
-          }
-        }
-      } catch {}
-      navigate({ to: "/portal" });
-    }, 700);
+    }
   };
+
+  const fillPreviewCredentials = () => {
+    setV({ username: PREVIEW_LOGIN.username, password: PREVIEW_LOGIN.password });
+    setErrors({});
+    setNotice("");
+  };
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden lg:block">
@@ -75,7 +99,7 @@ function Login() {
               </div>
             )}
             <form onSubmit={submit} noValidate className="mt-8 space-y-6">
-              <Field id="username" label="Username or customer ID" error={errors.username}>
+              <Field id="username" label="Username, email or customer ID" error={errors.username}>
                 <input id="username" autoComplete="username" className="field" value={v.username} onChange={(e) => setV({ ...v, username: e.target.value })} aria-invalid={!!errors.username} />
               </Field>
               <Field id="password" label="Password" error={errors.password}>
@@ -88,6 +112,19 @@ function Login() {
               </Field>
               <button type="submit" disabled={busy} className="btn-navy w-full">{busy ? "Verifying…" : "Sign In"}</button>
             </form>
+
+            <div className="mt-6 rounded-xl border border-gold/25 bg-gold/5 p-4 text-xs">
+              <p className="font-semibold uppercase tracking-[0.16em] text-gold">Preview account</p>
+              <p className="mt-2 leading-relaxed text-muted-foreground">
+                Username: <code className="font-semibold text-navy">{PREVIEW_LOGIN.username}</code>
+                <span className="mx-2 text-border">·</span>
+                Password: <code className="font-semibold text-navy">{PREVIEW_LOGIN.password}</code>
+              </p>
+              <button type="button" onClick={fillPreviewCredentials} className="mt-3 font-semibold text-navy underline-offset-4 hover:underline">
+                Fill preview credentials
+              </button>
+            </div>
+
             <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-gold" /> Never share your password or verification codes with anyone.</p>
             <p className="mt-8 text-sm text-muted-foreground">New to Pinnacle J? <Link to="/open-account" className="font-semibold text-navy underline-offset-4 hover:underline">Open an account</Link></p>
             <Link to="/" className="mt-3 inline-block text-sm text-muted-foreground hover:text-navy">← Back to home</Link>
