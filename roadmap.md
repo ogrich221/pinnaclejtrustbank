@@ -1,5 +1,6 @@
 # Admin and customer portal verification
 
+- [ ] Reproduce and fix new homepage applications not appearing in the admin approval queue.
 - [x] Add prominent homepage login access and verify valid, invalid, and newly registered customer sign-ins.
 - [ ] Inventory and exercise every admin navigation item, filter, modal, and action.
 - [ ] Verify admin changes reach the matching customer portal: profile, status, verification, balances, transactions, limits, and deletion.
