@@ -194,13 +194,13 @@ function DeviceShowcase() {
             <span className="font-display text-base font-semibold">Dashboard</span>
             <span className="bg-gold/15 px-2 py-1 text-[9px] font-semibold tracking-widest text-navy">VERIFIED SYSTEM</span>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 bg-navy p-4 text-ivory">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="col-span-1 sm:col-span-2 bg-navy p-4 text-ivory rounded-lg">
               <p className="text-ivory/60">Primary Checking Account</p>
               <p className="mt-1 font-display text-2xl">$0.00</p>
-              <div className="mt-3 flex gap-2">{["Transfer", "Pay", "Statements"].map((b) => <span key={b} className="border border-gold/50 px-2 py-1 text-gold">{b}</span>)}</div>
+              <div className="mt-3 flex gap-2">{["Transfer", "Pay", "Statements"].map((b) => <span key={b} className="border border-gold/50 px-2 py-1 text-gold text-[10px]">{b}</span>)}</div>
             </div>
-            <div className="bg-silver p-4">
+            <div className="bg-silver p-4 rounded-lg">
               <p className="text-muted-foreground">High-Yield Reserve</p>
               <p className="mt-1 font-display text-xl">$0.00</p>
               <div className="mt-3 h-1.5 bg-border"><div className="h-full w-2/3 bg-gold" /></div>
@@ -220,7 +220,7 @@ function DeviceShowcase() {
       </div>
       <div className="mx-[-4%] h-3 rounded-b-xl bg-navy" />
       {/* Phone */}
-      <div className="absolute -bottom-2 -right-2 w-[34%] min-w-[140px] rounded-[1.6rem] border-[6px] border-navy-deep bg-navy-deep shadow-elegant sm:right-0">
+      <div className="absolute -bottom-2 -right-2 w-[42%] sm:w-[34%] min-w-[130px] max-w-[210px] rounded-[1.4rem] sm:rounded-[1.6rem] border-[4px] sm:border-[6px] border-navy-deep bg-navy-deep shadow-elegant sm:right-0">
         <div className="rounded-[1.2rem] bg-navy p-3 text-[9px] text-ivory">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ivory/20" />
           <p className="text-ivory/60">Available Balance</p>

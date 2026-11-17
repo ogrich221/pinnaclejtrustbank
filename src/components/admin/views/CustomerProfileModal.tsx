@@ -183,8 +183,8 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-ivory/10 pt-4 text-xs">
+          {/* Navigation Tabs - Horizontally scrollable on phones, wrapped on computers */}
+          <div className="mt-6 flex items-center gap-2 border-t border-ivory/10 pt-4 text-xs overflow-x-auto scrollbar-none sm:flex-wrap pb-1">
             {[
               { id: "profile", label: "Profile Information", icon: User },
               { id: "account", label: "Account Information", icon: CreditCard },
@@ -200,7 +200,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 transition-all font-medium ${
+                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 transition-all font-medium whitespace-nowrap shrink-0 ${
                     isActive
                       ? "border border-gold/40 bg-gold/15 text-gold shadow-sm font-semibold"
                       : "border border-transparent text-ivory/70 hover:bg-ivory/5 hover:text-ivory"

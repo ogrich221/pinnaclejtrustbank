@@ -388,7 +388,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                             className="inline-flex items-center gap-1 rounded-lg border border-gold/30 bg-gold/10 px-2 py-1 text-[11px] font-semibold text-gold hover:bg-gold/20 transition-all shadow-sm"
                             title="Credit or Debit Customer Account"
                           >
-                            <DollarSign className="h-3 w-3" /> Â± Funds
+                            <DollarSign className="h-3 w-3" /> Funds
                           </button>
                           <div className="relative inline-block text-left">
                           <button

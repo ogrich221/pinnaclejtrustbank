@@ -545,29 +545,29 @@ export const CustomerDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#071426] text-[#F5F7FA] font-sans antialiased selection:bg-gold/30 selection:text-gold pb-24">
-      {/* Top Customer Portal Navigation Header */}
-      <header className="sticky top-0 z-30 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-6 py-4">
+      {/* Top Customer Portal Navigation Header - Optimized for Phones and Computers */}
+      <header className="sticky top-0 z-30 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-4 sm:px-6 py-3 sm:py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
             <span className="text-gold">
-              <LogoMark className="h-9 w-9" />
+              <LogoMark className="h-8 w-8 sm:h-9 sm:w-9" />
             </span>
             <div className="leading-none">
-              <span className="block font-display text-base font-bold tracking-[0.18em] text-ivory">
+              <span className="block font-display text-sm sm:text-base font-bold tracking-[0.18em] text-ivory">
                 PINNACLE J
               </span>
-              <span className="block text-[0.6rem] tracking-[0.45em] text-gold font-medium">
+              <span className="block text-[0.55rem] sm:text-[0.6rem] tracking-[0.45em] text-gold font-medium">
                 ONLINE BANKING
               </span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2.5 sm:gap-4 text-xs">
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 font-mono text-gold">
               <ShieldCheck className="h-3.5 w-3.5" /> 256-Bit Encrypted Session
             </div>
 
-            <div className="flex items-center gap-3 border-l border-ivory/15 pl-4">
+            <div className="flex items-center gap-2 sm:gap-3 border-l border-ivory/15 pl-2.5 sm:pl-4">
               {customer.avatarUrl ? (
                 <img
                   src={customer.avatarUrl}
@@ -727,17 +727,17 @@ export const CustomerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Actions Row */}
-              <div className="mt-8 flex flex-wrap gap-3 border-t border-ivory/10 pt-6">
+              {/* Quick Actions Row - Touch-friendly on Phones and Computers */}
+              <div className="mt-8 flex flex-wrap gap-2.5 sm:gap-3 border-t border-ivory/10 pt-6">
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTab("transfers");
                     setTransferType("domestic");
                   }}
-                  className="rounded-xl bg-gold px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md flex items-center gap-2"
+                  className="flex-1 sm:flex-initial justify-center min-h-[44px] rounded-xl bg-gold px-4 sm:px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md flex items-center gap-2"
                 >
-                  <ArrowUpRight className="h-4 w-4" /> Domestic Transfer
+                  <ArrowUpRight className="h-4 w-4 shrink-0" /> Domestic Transfer
                 </button>
                 <button
                   type="button"
@@ -745,16 +745,16 @@ export const CustomerDashboard: React.FC = () => {
                     setActiveTab("transfers");
                     setTransferType("international");
                   }}
-                  className="rounded-xl border border-gold/40 bg-gold/15 px-5 py-2.5 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-md flex items-center gap-2"
+                  className="flex-1 sm:flex-initial justify-center min-h-[44px] rounded-xl border border-gold/40 bg-gold/15 px-4 sm:px-5 py-2.5 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-md flex items-center gap-2"
                 >
-                  <Globe className="h-4 w-4" /> International Wire
+                  <Globe className="h-4 w-4 shrink-0" /> International Wire
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("beneficiaries")}
-                  className="rounded-xl border border-ivory/20 px-5 py-2.5 text-xs font-medium text-ivory/80 hover:bg-ivory/10 transition-colors"
+                  className="w-full sm:w-auto justify-center min-h-[44px] rounded-xl border border-ivory/20 px-4 sm:px-5 py-2.5 text-xs font-medium text-ivory/80 hover:bg-ivory/10 transition-colors flex items-center gap-2"
                 >
-                  Manage Beneficiaries
+                  <Users className="h-4 w-4 shrink-0" /> Manage Beneficiaries
                 </button>
               </div>
             </div>
@@ -930,15 +930,15 @@ export const CustomerDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Fee Disclosure & Authorization CTA */}
-                  <div className="rounded-xl border border-ivory/10 bg-navy/60 p-4 text-xs flex items-center justify-between">
+                  {/* Fee Disclosure & Authorization CTA - Responsive for Phone & Computer */}
+                  <div className="rounded-xl border border-ivory/10 bg-navy/60 p-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <span className="text-ivory/60">Applicable Clearance Fee:</span>
                       <p className="font-mono text-emerald-400 font-bold">$0.00 (Standard Domestic Network)</p>
                     </div>
                     <button
                       type="submit"
-                      className="rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg"
+                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
                     >
                       Authorize Domestic Wire
                     </button>
@@ -1096,15 +1096,15 @@ export const CustomerDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* International Wire Fee & Quotation */}
-                  <div className="rounded-xl border border-gold/30 bg-gold/10 p-4 text-xs flex items-center justify-between">
+                  {/* International Wire Fee & Quotation - Responsive for Phone & Computer */}
+                  <div className="rounded-xl border border-gold/30 bg-gold/10 p-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <span className="text-ivory/60">SWIFT GPI Network Fee:</span>
                       <p className="font-mono text-gold font-bold">$15.00 Flat (Same-Day Global Settlement)</p>
                     </div>
                     <button
                       type="submit"
-                      className="rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg"
+                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
                     >
                       Authorize International Wire
                     </button>
