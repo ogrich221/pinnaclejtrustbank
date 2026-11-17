@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   BarChart3,
@@ -44,6 +46,8 @@ import { NotificationsView } from "./views/NotificationsView";
 import { NotificationsDrawer } from "./views/NotificationsDrawer";
 
 export const AdminLayout: React.FC = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     currentView,
     setCurrentView,
@@ -64,6 +68,14 @@ export const AdminLayout: React.FC = () => {
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState("");
+
+  const handleSignOut = async () => {
+    setProfileDropdownOpen(false);
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    await navigate({ to: "/auth", replace: true });
+  };
 
   const unreadNotifsCount = Array.isArray(notifications)
     ? notifications.filter((n) => Boolean(n && !n.isRead)).length
@@ -415,12 +427,13 @@ export const AdminLayout: React.FC = () => {
                     </button>
                   </div>
                   <div className="border-t border-ivory/10 pt-1">
-                    <Link
-                      to="/login"
+                    <button
+                      type="button"
+                      onClick={() => void handleSignOut()}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/15"
                     >
                       <LogOut className="h-3.5 w-3.5" /> Sign Out Session
-                    </Link>
+                    </button>
                   </div>
                 </div>
               )}

@@ -21,7 +21,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { saveCustomerCredentials } from "@/lib/customer-access";
+import { submitAccountApplication } from "@/lib/account-applications.functions";
 
 export interface OnboardingData {
   // Step 1: Personal Information
@@ -153,6 +155,7 @@ const ACCOUNT_TYPE_DETAILS = {
 };
 
 export const OpenAccountWizard: React.FC = () => {
+  const submitSharedApplication = useServerFn(submitAccountApplication);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [form, setForm] = useState<OnboardingData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof OnboardingData, string>>>({});
@@ -315,6 +318,7 @@ export const OpenAccountWizard: React.FC = () => {
       const newCustomer = {
         id: `cust-${Date.now()}`,
         customerId: `PJ-${Math.floor(89200 + Math.random() * 800)}`,
+        applicationReference: ref,
         fullName: `${cleanFirst} ${cleanLast}`,
         initials,
         email: form.email.trim(),
@@ -373,6 +377,7 @@ export const OpenAccountWizard: React.FC = () => {
       };
 
       list = [newCustomer, ...list.filter((c: any) => c.id !== newCustomer.id && c.customerId !== newCustomer.customerId && (!c.email || c.email.toLowerCase() !== newCustomer.email.toLowerCase()))];
+      await submitSharedApplication({ data: { reference: ref, customer: newCustomer } });
       localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
       await saveCustomerCredentials(newCustomer, form.username, form.password);
 

@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794953087712,
+      "tag": "0000_create_shared_account_applications",
+      "breakpoints": true
+    }
+  ]
 }

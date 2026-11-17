@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { approveSharedApplication, listAccountApplications } from "@/lib/account-applications.functions";
 import {
   CustomerRecord,
   TransactionRecord,
@@ -187,6 +190,8 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
     registrationDate: String(raw.registrationDate || raw.dateOpened || new Date().toISOString().substring(0, 10)),
     jurisdiction: String(raw.jurisdiction || "United States (FCA / FINCEN)"),
     twoFactorEnabled: Boolean(raw.twoFactorEnabled ?? true),
+    ...(raw.username ? { username: String(raw.username) } : {}),
+    ...(raw.applicationReference ? { applicationReference: String(raw.applicationReference) } : {}),
     verificationStatus: (raw.verificationStatus || "Pending") as VerificationStatus,
     accountStatus: (raw.accountStatus || "Pending") as CustomerAccountStatus,
     lastLogin: String(raw.lastLogin || "Pending first session"),
@@ -198,6 +203,8 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
 }
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const fetchSharedApplications = useServerFn(listAccountApplications);
+  const saveSharedApproval = useServerFn(approveSharedApplication);
   const [customers, setCustomers] = useState<CustomerRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
@@ -358,6 +365,56 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [globalSearch, setGlobalSearch] = useState<string>("");
 
   const activeAdmin: AdministratorProfile = INITIAL_ADMIN;
+
+  const syncSharedApplications = useCallback(async () => {
+    try {
+      const shared = await fetchSharedApplications();
+      const normalized = shared
+        .map(normalizeCustomerRecord)
+        .filter((customer): customer is CustomerRecord => Boolean(customer));
+
+      setCustomers((previous) => {
+        const matches = (a: CustomerRecord, b: CustomerRecord) =>
+          a.id === b.id || a.customerId === b.customerId ||
+          (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase());
+        const sharedRows = normalized.map((remote) => {
+          const local = previous.find((customer) => matches(customer, remote));
+          return local ? { ...local, ...remote } : remote;
+        });
+        const localOnly = previous.filter((local) => !normalized.some((remote) => matches(local, remote)));
+        return [...sharedRows, ...localOnly];
+      });
+
+      setNotifications((previous) => {
+        const additions = normalized
+          .filter((customer) => !previous.some((note) => note.id === `notif-shared-${customer.id}`))
+          .map((customer) => ({
+            id: `notif-shared-${customer.id}`,
+            title: `New Application: ${customer.fullName}`,
+            message: `${customer.fullName} submitted ${customer.accountType} for administrator review.`,
+            timestamp: "Shared application",
+            category: "Verification" as const,
+            severity: "Info" as const,
+            isRead: false,
+            actionUrl: "pending-verification",
+          }));
+        return additions.length > 0 ? [...additions, ...previous] : previous;
+      });
+    } catch {
+      // The local dashboard remains available if the shared queue is temporarily unreachable.
+    }
+  }, [fetchSharedApplications]);
+
+  useEffect(() => {
+    void syncSharedApplications();
+    const channel = supabase
+      .channel(`admin-applications-${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "account_applications" }, () => {
+        void syncSharedApplications();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [syncSharedApplications]);
 
   // Persistence with protection against overwriting newly created accounts from other tabs
   useEffect(() => {
@@ -968,6 +1025,14 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.success(`Account approved and activated for ${target.fullName}`, {
       description: `Customer ID ${target.customerId} is now Active.`,
     });
+
+    if (target.applicationReference) {
+      void saveSharedApproval({ data: { customerKey: target.id } }).catch(() => {
+        toast.error("The shared approval could not be saved", {
+          description: "Use Refresh Data to check the connection and approve again.",
+        });
+      });
+    }
   };
 
 
@@ -1209,6 +1274,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.info("System records reloaded to default state (1 testrun account)");
   };
 
+  const refreshAllData = useCallback(() => {
+    handleSync();
+    void syncSharedApplications();
+  }, [handleSync, syncSharedApplications]);
+
   return (
     <AdminDataContext.Provider
       value={{
@@ -1243,7 +1313,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         creditDebitCustomer,
         editTransaction,
         resetToDefaults,
-        refreshAllData: handleSync,
+        refreshAllData,
       }}
     >
       {children}

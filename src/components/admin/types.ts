@@ -92,6 +92,8 @@ export interface CustomerRecord {
   twoFactorEnabled?: boolean;
   beneficiaries?: CustomerBeneficiary[];
   transferPinChangedAt?: string;
+  username?: string;
+  applicationReference?: string;
 }
 
 export type TransactionType =
