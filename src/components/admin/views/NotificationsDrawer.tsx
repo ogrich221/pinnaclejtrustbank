@@ -40,7 +40,9 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen
   const handleNotificationClick = (id: string, actionUrl?: string) => {
     markNotificationRead(id);
     if (actionUrl) {
-      setCurrentView(actionUrl as AdminViewId);
+      const validViews: AdminViewId[] = ["customers", "transactions", "pending-verification", "security", "notifications"];
+      const destination = validViews.includes(actionUrl as AdminViewId) ? actionUrl as AdminViewId : "customers";
+      setCurrentView(destination);
       onClose();
     }
   };

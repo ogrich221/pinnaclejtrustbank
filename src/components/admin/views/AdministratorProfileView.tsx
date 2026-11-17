@@ -16,10 +16,18 @@ import { toast } from "sonner";
 
 export const AdministratorProfileView: React.FC = () => {
   const { activeAdmin } = useAdminData();
+  const [keyFingerprint, setKeyFingerprint] = React.useState(() =>
+    localStorage.getItem("pjtb_admin_session_key_fingerprint") || "Not rotated in this browser"
+  );
 
   const handleRotateKey = () => {
-    toast.success("Cryptographic Admin Key rotated", {
-      description: "New 4096-bit master signing key issued. Active session confirmed.",
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const fingerprint = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
+    localStorage.setItem("pjtb_admin_session_key_fingerprint", fingerprint);
+    setKeyFingerprint(fingerprint);
+    toast.success("Administrator session key rotated", {
+      description: "The new local session credential is active in this browser.",
     });
   };
 
@@ -116,9 +124,10 @@ export const AdministratorProfileView: React.FC = () => {
           </div>
           <div className="rounded-xl border border-ivory/10 bg-navy/60 p-4">
             <p className="text-[10px] uppercase tracking-wider text-ivory/50">Active Session Status</p>
-            <p className="mt-1 font-semibold text-gold flex items-center gap-1.5 font-mono">
-              <Clock className="h-4 w-4" /> Authenticated · 256-Bit TLS
-            </p>
+              <p className="mt-1 font-semibold text-gold flex items-center gap-1.5 font-mono">
+                <Clock className="h-4 w-4" /> Authenticated · 256-Bit TLS
+              </p>
+              <p className="mt-2 break-all text-[10px] text-ivory/50 font-mono">Key fingerprint: {keyFingerprint}</p>
           </div>
         </div>
       </div>
