@@ -123,6 +123,11 @@ function AdministratorAuth() {
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-ivory/20 bg-navy-deep px-4 py-3 text-sm text-ivory outline-none focus:border-gold"
               />
+              {mode === "sign-in" && (
+                <div className="mt-2 text-right">
+                  <Link to="/forgot-password" className="text-sm font-semibold text-gold underline-offset-4 hover:underline">Forgot password?</Link>
+                </div>
+              )}
             </div>
             {notice && (
               <p role={confirmed ? "status" : "alert"} className={`rounded-xl border p-3 text-sm ${confirmed ? "border-gold/30 bg-gold/10 text-gold" : "border-destructive/40 bg-destructive/10 text-destructive-foreground"}`}>
