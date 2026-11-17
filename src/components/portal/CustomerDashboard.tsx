@@ -34,6 +34,8 @@ import {
   Camera,
   Upload,
   Search,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
 import { toast } from "sonner";
@@ -1386,6 +1388,33 @@ export const CustomerDashboard: React.FC = () => {
                 <p className="font-medium text-xs text-ivory mt-1">{customer.address.street}, {customer.address.city}, {customer.address.country}</p>
                 <span className="text-[10px] text-ivory/40">Jurisdiction: {customer.address.country}</span>
               </div>
+            </div>
+
+            {/* Dedicated Client Support Desk Card */}
+            <div className="relative z-10 rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-white/[0.04] to-gold/5 p-6 shadow-xl backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/40 bg-gold/15 text-gold shrink-0">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="font-display font-bold text-base text-ivory">24/7 Dedicated Client Support Desk</h4>
+                  <p className="text-xs text-ivory/70 mt-0.5">
+                    For wire pre-approvals, compliance inquiries, or emergency account locks:
+                  </p>
+                  <a
+                    href="mailto:contactsupport@pinnaclejtrustbank.online"
+                    className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-gold hover:text-gold-light transition-colors mt-1"
+                  >
+                    contactsupport@pinnaclejtrustbank.online
+                  </a>
+                </div>
+              </div>
+              <a
+                href="mailto:contactsupport@pinnaclejtrustbank.online"
+                className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2.5 text-xs font-bold text-gold hover:bg-gold/25 transition-all shadow-md shrink-0 flex items-center gap-2"
+              >
+                <Mail className="h-3.5 w-3.5" /> Email Support Desk
+              </a>
             </div>
           </div>
         )}

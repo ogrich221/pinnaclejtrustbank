@@ -1408,9 +1408,9 @@ export const OpenAccountWizard: React.FC = () => {
 
             <p className="mt-8 text-xs text-ivory/50">
               Need assistance? Contact our private client desk at{" "}
-              <Link to="/contact" className="text-gold underline hover:text-gold-soft">
-                Customer Support
-              </Link>
+              <a href="mailto:contactsupport@pinnaclejtrustbank.online" className="text-gold underline hover:text-gold-soft font-medium">
+                contactsupport@pinnaclejtrustbank.online
+              </a>
             </p>
           </div>
         )}

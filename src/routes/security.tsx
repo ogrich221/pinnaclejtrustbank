@@ -38,7 +38,7 @@ const items = [
   },
   {
     "title": "Report Concerns",
-    "text": "Contact our team immediately if you suspect unauthorised access."
+    "text": "Contact our security desk immediately at contactsupport@pinnaclejtrustbank.online if you suspect unauthorised access."
   }
 ];
 
