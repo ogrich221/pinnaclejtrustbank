@@ -19,6 +19,11 @@ import {
   INITIAL_NOTIFICATIONS,
 } from "./mockData";
 import { toast } from "sonner";
+import {
+  calculateVerificationStatus,
+  getAdjustedBalances,
+  mapAdminTransactionStatus,
+} from "@/lib/banking";
 
 export type AdminViewId =
   | "dashboard"
@@ -95,7 +100,21 @@ const STORAGE_KEYS = {
   TRANSACTIONS: "pjtb_admin_transactions_v3",
   AUDIT_LOGS: "pjtb_admin_audit_logs_v3",
   NOTIFICATIONS: "pjtb_admin_notifications_v3",
+  DELETED_CUSTOMERS: "pjtb_deleted_customer_ids_v3",
 };
+
+function readDeletedCustomerIds(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.DELETED_CUSTOMERS) || "[]");
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function isDeletedCustomer(customer: CustomerRecord, deletedIds: string[]): boolean {
+  return deletedIds.includes(customer.id) || deletedIds.includes(customer.customerId);
+}
 
 export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
   if (!raw || typeof raw !== "object") return null;
@@ -108,9 +127,9 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
   if (!initials || typeof initials !== "string") {
     const parts = fullName.trim().split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
-      initials = `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    } else if (parts.length === 1 && parts[0].length >= 2) {
-      initials = parts[0].substring(0, 2).toUpperCase();
+      initials = `${parts[0]?.charAt(0) || "P"}${parts[1]?.charAt(0) || "J"}`.toUpperCase();
+    } else if (parts.length === 1 && (parts[0]?.length || 0) >= 2) {
+      initials = (parts[0] || "PJ").substring(0, 2).toUpperCase();
     } else {
       initials = "PJ";
     }
@@ -159,6 +178,10 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
     currency: raw.currency || "USD",
     balance,
     availableBalance,
+    dailyTransferLimit:
+      typeof raw.dailyTransferLimit === "number" && Number.isFinite(raw.dailyTransferLimit) && raw.dailyTransferLimit >= 0
+        ? raw.dailyTransferLimit
+        : 50000,
     holdBalance,
     dateOpened: String(raw.dateOpened || raw.registrationDate || new Date().toISOString().substring(0, 10)),
     registrationDate: String(raw.registrationDate || raw.dateOpened || new Date().toISOString().substring(0, 10)),
@@ -218,6 +241,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       });
 
+      const deletedIds = readDeletedCustomerIds();
+      list = list.filter((customer) => !isDeletedCustomer(customer, deletedIds));
       if (merged) {
         localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(list));
       }
@@ -424,27 +449,15 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       });
 
+      const deletedIds = readDeletedCustomerIds();
+      list = list.filter((customer) => !isDeletedCustomer(customer, deletedIds));
+
       if (modified) {
         localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(list));
       }
 
-      if (list.length > 0) {
-        setCustomers((prev) => {
-          if (prev.length === list.length) {
-            const hasDiff = list.some((item, idx) => {
-              const prevItem = prev[idx];
-              return (
-                !prevItem ||
-                prevItem.id !== item.id ||
-                prevItem.accountStatus !== item.accountStatus ||
-                prevItem.verificationStatus !== item.verificationStatus ||
-                prevItem.balance !== item.balance
-              );
-            });
-            if (!hasDiff) return prev;
-          }
-          return list;
-        });
+      if (storedCustomers || modified) {
+        setCustomers((prev) => JSON.stringify(prev) === JSON.stringify(list) ? prev : list);
       }
 
       const storedTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
@@ -630,9 +643,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const updatedCustomers = customers.map((c) => {
       if (c.id === target.id || c.customerId === target.customerId) {
         const updatedDocs = (c.documents || []).map((d) => (d.id === docId ? { ...d, status: newStatus } : d));
-        const allApproved = updatedDocs.every((d) => d.status === "Approved");
-        const anyRejected = updatedDocs.some((d) => d.status === "Rejected");
-        updatedVerification = anyRejected ? "Rejected" : allApproved ? "Verified" : "Pending";
+        updatedVerification = calculateVerificationStatus(updatedDocs);
 
         return {
           ...c,
@@ -666,7 +677,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {}
 
     logAuditEntry(
-      newStatus === "Approved" ? "APPROVE_VERIFICATION" : "REJECT_VERIFICATION",
+      newStatus === "Approved"
+        ? "APPROVE_VERIFICATION"
+        : newStatus === "Rejected"
+        ? "REJECT_VERIFICATION"
+        : "UPDATE_VERIFICATION",
       target.customerId,
       `Document ID: ${docId} for ${target.fullName}`,
       reason,
@@ -680,7 +695,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const addCustomerNote = (customerId: string, content: string, category: AdministrativeNote["category"]) => {
-    const target = customers.find((c) => c.id === customerId);
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
     const newNote: AdministrativeNote = {
@@ -692,9 +707,23 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       category,
     };
 
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === customerId ? { ...c, notes: [newNote, ...c.notes] } : c))
+    const updatedCustomers = customers.map((c) =>
+      c.id === target.id ? { ...c, notes: [newNote, ...(c.notes || [])] } : c
     );
+    setCustomers(updatedCustomers);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (portalObj.id === target.id || portalObj.customerId === target.customerId) {
+          portalObj.notes = [newNote, ...(portalObj.notes || [])];
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
+        }
+      }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
 
     logAuditEntry(
       "ADD_ADMIN_NOTE",
@@ -908,7 +937,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isRead: false,
       severity: "Info",
       category: "Customer",
-      actionUrl: target.customerId,
+      actionUrl: "customers",
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
@@ -1052,7 +1081,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isRead: false,
       severity: "Info",
       category: "Transaction",
-      actionUrl: target.customerId,
+      actionUrl: "transactions",
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
