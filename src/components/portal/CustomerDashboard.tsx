@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
 import { toast } from "sonner";
+import { getTransferValidationError, mapAdminTransactionStatus } from "@/lib/banking";
 
 interface Beneficiary {
   id: string;
@@ -58,20 +59,15 @@ interface PortalTransaction {
   category: "Deposit" | "Withdrawal" | "Domestic" | "International";
   amount: number;
   currency: string;
-  status: "Completed" | "Processing" | "Flagged";
+  status: "Completed" | "Processing" | "Flagged" | "Rejected" | "Reversed";
   counterparty: string;
 }
 
 export const CustomerDashboard: React.FC = () => {
   // Active Customer data
-  const [customer, setCustomer] = useState(() => {
-    try {
-      const saved = localStorage.getItem("pjtb_current_portal_customer");
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return {
+  const [customer, setCustomer] = useState<any>(() => {
+    const defaultCustomer = {
+      id: "cust-testrun-1",
       fullName: "Testrun Customer",
       customerId: "PJ-89201",
       accountNumber: "PJTB-8492-3841-09",
@@ -80,6 +76,7 @@ export const CustomerDashboard: React.FC = () => {
       currency: "USD",
       balance: 0.0,
       availableBalance: 0.0,
+      dailyTransferLimit: 50000,
       accountStatus: "Pending",
       verificationStatus: "Pending",
       email: "testrun@pinnaclejtrust.com",
@@ -90,6 +87,20 @@ export const CustomerDashboard: React.FC = () => {
         country: "United States",
       },
     };
+    try {
+      const saved = localStorage.getItem("pjtb_current_portal_customer");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed) return parsed;
+      }
+      const deletedIds = JSON.parse(localStorage.getItem("pjtb_deleted_customer_ids_v3") || "[]");
+      if (Array.isArray(deletedIds) && (deletedIds.includes(defaultCustomer.id) || deletedIds.includes(defaultCustomer.customerId))) {
+        return null;
+      }
+    } catch {
+      // ignore
+    }
+    return defaultCustomer;
   });
 
   const [activeTab, setActiveTab] = useState<
@@ -219,7 +230,7 @@ export const CustomerDashboard: React.FC = () => {
             category: t.direction === "Inbound" ? "Deposit" : "Withdrawal",
             amount: t.amount,
             currency: t.currency || "USD",
-            status: t.status === "Settled" ? "Completed" : t.status,
+            status: mapAdminTransactionStatus(t.status),
             counterparty: t.originatingBank || t.beneficiaryName || "Direct Settlement",
           }));
         }
@@ -238,17 +249,24 @@ export const CustomerDashboard: React.FC = () => {
         const currentPortalStr = localStorage.getItem("pjtb_current_portal_customer");
         const currentLocal = currentPortalStr ? JSON.parse(currentPortalStr) : customer;
 
+        if (!currentLocal) return;
+
         let latestCust = currentLocal;
         if (adminCustsStr) {
           const list = JSON.parse(adminCustsStr);
-          const found = list.find(
+          const found = Array.isArray(list) ? list.find(
             (c: any) =>
               c.id === currentLocal.id ||
               c.customerId === currentLocal.customerId ||
               (c.email && c.email.toLowerCase() === currentLocal.email?.toLowerCase())
-          );
+          ) : null;
           if (found) {
             latestCust = found;
+          } else if (Array.isArray(list)) {
+            localStorage.removeItem("pjtb_current_portal_customer");
+            setCustomer(null);
+            setTransactions([]);
+            return;
           }
         }
 
@@ -280,7 +298,7 @@ export const CustomerDashboard: React.FC = () => {
                   category: t.direction === "Inbound" ? "Deposit" : "Withdrawal",
                   amount: t.amount,
                   currency: t.currency || "USD",
-                  status: t.status === "Settled" ? "Completed" : t.status,
+                  status: mapAdminTransactionStatus(t.status),
                   counterparty: t.originatingBank || t.beneficiaryName || "Direct Settlement",
                 }))
               );
@@ -354,16 +372,32 @@ export const CustomerDashboard: React.FC = () => {
   // Transfer Receipt Modal
   const [receiptData, setReceiptData] = useState<any | null>(null);
 
+  const validateTransfer = (amount: number, fee = 0) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const outboundToday = transactions
+      .filter((transaction) =>
+        transaction.category !== "Deposit" &&
+        (transaction.status === "Completed" || transaction.status === "Processing") &&
+        String(transaction.date).slice(0, 10) === today
+      )
+      .reduce((total, transaction) => total + transaction.amount, 0);
+
+    return getTransferValidationError({
+      accountStatus: customer?.accountStatus || "Unavailable",
+      availableBalance: Number(customer?.availableBalance || 0),
+      dailyTransferLimit: Number(customer?.dailyTransferLimit ?? 50000),
+      amount,
+      fee,
+      outboundToday,
+    });
+  };
+
   // Handle Domestic Transfer Submit
   const handleInitiateDomestic = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customer.balance <= 0) {
-      toast.error("Account balance is 0.00. Please deposit funds before initiating an outbound transfer.");
-      return;
-    }
     const amt = parseFloat(domesticForm.amount);
-    if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
-    if (amt > customer.availableBalance) return void toast.error("Transfer amount exceeds available balance");
+    const validationError = validateTransfer(amt);
+    if (validationError) return void toast.error(validationError);
     if (!domesticForm.beneficiaryName || !domesticForm.accountNumber || !domesticForm.beneficiaryBankAddress) {
       return void toast.error("Recipient Bank Address and Beneficiary details are required");
     }
@@ -388,14 +422,13 @@ export const CustomerDashboard: React.FC = () => {
   // Handle International Wire Submit
   const handleInitiateIntl = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customer.balance <= 0) {
-      toast.error("Account balance is 0.00. Please deposit funds before initiating an outbound transfer.");
-      return;
-    }
     const amt = parseFloat(intlForm.amount);
-    if (!amt || amt <= 0) return void toast.error("Please enter a valid transfer amount");
     const fee = 15.0;
-    if (amt + fee > customer.availableBalance) return void toast.error("Transfer amount + $15.00 network fee exceeds available balance");
+    const validationError = validateTransfer(amt, fee);
+    if (validationError) return void toast.error(validationError);
+    if (intlForm.currency !== customer.currency) {
+      return void toast.error(`Cross-currency settlement requires an exchange quote. Select ${customer.currency} for this account.`);
+    }
     if (!intlForm.beneficiaryName || !intlForm.swiftBic || !intlForm.ibanAccount) {
       return void toast.error("Please complete all mandatory international wire fields");
     }
@@ -425,6 +458,12 @@ export const CustomerDashboard: React.FC = () => {
   const handleConfirmPin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pinInput.length !== 6) return void toast.error("PIN must be exactly 6 digits");
+    if (!pendingTransfer) return;
+    const validationError = validateTransfer(pendingTransfer.amount, pendingTransfer.fee);
+    if (validationError) {
+      setPinModalOpen(false);
+      return void toast.error(validationError);
+    }
 
     const amt = pendingTransfer?.amount || 0;
     const fee = pendingTransfer?.fee || 0;
@@ -502,9 +541,9 @@ export const CustomerDashboard: React.FC = () => {
         reference: ref,
         customerId: customer.customerId,
         customerName: customer.fullName,
-        type: pendingTransfer?.type === "Domestic" ? "Domestic Wire" : "International Wire",
+        type: pendingTransfer?.type === "Domestic" ? "Fedwire Domestic" : "Outbound SWIFT",
         amount: amt,
-        currency: customer.currency,
+        currency: pendingTransfer?.currency || customer.currency,
         direction: "Outbound",
         timestamp: dateStr,
         status: "Settled",
@@ -544,6 +583,23 @@ export const CustomerDashboard: React.FC = () => {
       description: `Reference: ${ref}. Receipt generated.`,
     });
   };
+
+  if (!customer) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-navy-deep px-6 text-ivory">
+        <div className="w-full max-w-md rounded-3xl border border-gold/30 bg-white/[0.04] p-8 text-center shadow-2xl">
+          <LogoMark className="mx-auto h-12 w-12 text-gold" />
+          <h1 className="mt-5 text-3xl font-display font-bold">Account No Longer Available</h1>
+          <p className="mt-3 text-sm text-ivory/70">
+            This customer record has been removed by an administrator. Contact support if you believe this is an error.
+          </p>
+          <Link to="/login" className="mt-6 inline-flex rounded-xl bg-gold px-5 py-2.5 text-xs font-bold text-navy-deep">
+            Return to Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#071426] text-[#F5F7FA] font-sans antialiased selection:bg-gold/30 selection:text-gold pb-24">

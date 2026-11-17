@@ -69,13 +69,14 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
   if (!customer) return null;
 
   const numAmount = parseFloat(amount) || 0;
-  const currentBalance = customer.balance || 0;
+  const currentBalance = customer.availableBalance || 0;
   const delta = type === "Credit" ? numAmount : -numAmount;
-  const projectedBalance = Math.max(0, currentBalance + delta);
+  const projectedBalance = currentBalance + delta;
+  const debitExceedsBalance = type === "Debit" && numAmount > currentBalance;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (numAmount <= 0) return;
+    if (numAmount <= 0 || debitExceedsBalance) return;
     if (!narration.trim()) return;
 
     setIsSubmitting(true);
@@ -320,6 +321,12 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
             </div>
           </div>
 
+          {debitExceedsBalance && (
+            <p role="alert" className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+              <AlertCircle className="h-4 w-4" /> The debit exceeds the customer&apos;s available balance. No funds will be deducted.
+            </p>
+          )}
+
           {/* Footer Submit Buttons */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-ivory/10">
             <button
@@ -331,7 +338,7 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || numAmount <= 0}
+              disabled={isSubmitting || numAmount <= 0 || debitExceedsBalance}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-all shadow-lg ${
                 type === "Credit"
                   ? "bg-emerald-500 hover:bg-emerald-400 text-navy-deep shadow-emerald-500/20"
