@@ -41,13 +41,14 @@ interface CustomerProfileModalProps {
 }
 
 export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
-  customer,
+  customer: customerSnapshot,
   initialTab = "profile",
   initialEditMode = false,
   onClose,
   onOpenStatusAction,
 }) => {
   const {
+    customers,
     transactions,
     updateVerificationStatus,
     addCustomerNote,
@@ -55,6 +56,9 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
     approveCustomerAccount,
     deleteCustomer,
   } = useAdminData();
+  const customer = customers.find(
+    (record) => record.id === customerSnapshot?.id || record.customerId === customerSnapshot?.customerId
+  ) || customerSnapshot;
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCreditDebitModal, setShowCreditDebitModal] = useState(false);
   const [creditDebitModalType, setCreditDebitModalType] = useState<"Credit" | "Debit">("Credit");
@@ -177,7 +181,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
       issueDate: newDocForm.issueDate,
       expiryDate: newDocForm.expiryDate,
       status: newDocForm.status,
-      submittedAt: new Date().toISOString().split("T")[0],
+      submittedAt: new Date().toISOString().split("T")[0] || new Date().toISOString().slice(0, 10),
     };
     editCustomerDetails(customer.id, {
       documents: [newDoc, ...(customer.documents || [])],

@@ -151,7 +151,9 @@ export const NotificationsView: React.FC = () => {
                   onClick={(e) => {
                     e.stopPropagation();
                     markNotificationRead(n.id);
-                    setCurrentView(n.actionUrl as AdminViewId);
+                    const validViews: AdminViewId[] = ["customers", "transactions", "pending-verification", "security", "notifications"];
+                    const destination = validViews.includes(n.actionUrl as AdminViewId) ? n.actionUrl as AdminViewId : "customers";
+                    setCurrentView(destination);
                   }}
                   className="inline-flex items-center gap-1.5 self-start sm:self-center shrink-0 rounded-xl border border-gold/40 bg-gold/15 px-3.5 py-1.5 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-sm"
                 >

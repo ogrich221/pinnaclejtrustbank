@@ -19,7 +19,15 @@ export interface AdministrativeNote {
 
 export interface VerificationDocument {
   id: string;
-  documentType: "Passport" | "National ID" | "Articles of Incorporation" | "Proof of Address" | "Tax Residency Certificate";
+  documentType:
+    | "Passport"
+    | "National ID"
+    | "Articles of Incorporation"
+    | "Proof of Address"
+    | "Tax Residency Certificate"
+    | "Corporate Resolution"
+    | "Trust Deed"
+    | "Tax Certificate";
   documentNumber: string;
   issueDate: string;
   expiryDate: string;
@@ -67,6 +75,11 @@ export interface CustomerRecord {
   notes: AdministrativeNote[];
   documents: VerificationDocument[];
   securityHistory: SecurityEvent[];
+  routingNumber?: string;
+  tier?: string;
+  holdBalance?: number;
+  dateOpened?: string;
+  twoFactorEnabled?: boolean;
 }
 
 export type TransactionType =
@@ -122,6 +135,7 @@ export interface AuditLogEntry {
     | "FLAG_ACCOUNT"
     | "APPROVE_VERIFICATION"
     | "REJECT_VERIFICATION"
+    | "UPDATE_VERIFICATION"
     | "EDIT_CUSTOMER_PROFILE"
     | "ADD_ADMIN_NOTE"
     | "MODIFY_TRANSFER_LIMIT"

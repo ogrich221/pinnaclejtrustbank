@@ -28,11 +28,26 @@ export const AnalyticsView: React.FC = () => {
   const { customers, transactions } = useAdminData();
   const [dateRange, setDateRange] = useState<string>("Last 30 Days");
 
-  const totalVolumeUSD = Array.isArray(transactions)
-    ? transactions.reduce((acc, t) => acc + (t && t.currency === "USD" ? t.amount || 0 : (t?.amount || 0) * 1.1), 0)
-    : 0;
-  const inboundTxs = Array.isArray(transactions) ? transactions.filter((t) => t && t.direction === "Inbound") : [];
-  const outboundTxs = Array.isArray(transactions) ? transactions.filter((t) => t && t.direction === "Outbound") : [];
+  const rangeStart = new Date();
+  if (dateRange === "Today") {
+    rangeStart.setHours(0, 0, 0, 0);
+  } else {
+    const days = dateRange === "Last 7 Days" ? 7 : dateRange === "Last 90 Days" ? 90 : 30;
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeStart.setDate(rangeStart.getDate() - (days - 1));
+  }
+  const filteredTransactions = (Array.isArray(transactions) ? transactions : []).filter((transaction) => {
+    if (!transaction) return false;
+    const timestamp = new Date(String(transaction.timestamp).replace(" ", "T"));
+    return !Number.isNaN(timestamp.getTime()) && timestamp >= rangeStart;
+  });
+
+  const totalVolumeUSD = filteredTransactions.reduce(
+    (acc, t) => acc + (t.currency === "USD" ? t.amount || 0 : (t.amount || 0) * 1.1),
+    0
+  );
+  const inboundTxs = filteredTransactions.filter((t) => t.direction === "Inbound");
+  const outboundTxs = filteredTransactions.filter((t) => t.direction === "Outbound");
   const totalInboundUSD = inboundTxs.reduce(
     (acc, t) => acc + (t.currency === "USD" ? t.amount || 0 : (t.amount || 0) * 1.1),
     0
@@ -128,7 +143,7 @@ export const AnalyticsView: React.FC = () => {
             ${totalVolumeUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <span className="mt-1 text-xs text-ivory/60 flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 text-gold" /> {transactions.length} total transaction{transactions.length === 1 ? "" : "s"}
+            <TrendingUp className="h-3 w-3 text-gold" /> {filteredTransactions.length} transaction{filteredTransactions.length === 1 ? "" : "s"} in selected period
           </span>
         </div>
 

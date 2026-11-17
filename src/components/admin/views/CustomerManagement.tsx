@@ -561,7 +561,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
         {/* Pagination Footer */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-ivory/10 bg-navy-deep/60 px-6 py-4 text-xs text-ivory/60">
           <div>
-            Showing <strong className="text-ivory">{(currentPage - 1) * rowsPerPage + 1}</strong> to{" "}
+            Showing <strong className="text-ivory">{sortedCustomers.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1}</strong> to{" "}
             <strong className="text-ivory">
               {Math.min(currentPage * rowsPerPage, sortedCustomers.length)}
             </strong>{" "}
