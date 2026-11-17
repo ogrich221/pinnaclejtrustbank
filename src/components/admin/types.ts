@@ -130,7 +130,8 @@ export interface AuditLogEntry {
     | "ACCOUNT_APPROVED"
     | "CREDIT_ACCOUNT"
     | "DEBIT_ACCOUNT"
-    | "EDIT_TRANSACTION";
+    | "EDIT_TRANSACTION"
+    | "DELETE_ACCOUNT";
   targetId: string;
   targetDescription: string;
   timestamp: string;

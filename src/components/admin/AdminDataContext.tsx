@@ -81,6 +81,7 @@ interface AdminDataContextType {
   markAllNotificationsRead: () => void;
   activeAdmin: AdministratorProfile;
   approveCustomerAccount: (customerId: string, reason?: string) => void;
+  deleteCustomer: (customerId: string) => void;
   creditDebitCustomer: (params: CreditDebitParams) => void;
   editTransaction: (params: EditTransactionParams) => void;
   resetToDefaults: () => void;
@@ -467,7 +468,31 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
-    const updated = customers.map((c) => (c.id === target.id || c.customerId === target.customerId ? { ...c, ...details } : c));
+    const updated = customers.map((c) => {
+      if (c.id === target.id || c.customerId === target.customerId) {
+        const newInitials = details.fullName
+          ? details.fullName.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+          : c.initials;
+
+        let newMasked = c.maskedAccountNumber;
+        if (details.accountNumber) {
+          const clean = details.accountNumber.trim();
+          newMasked = clean.length > 4 ? `PJTB-••••-${clean.slice(-4)}` : clean;
+        }
+
+        const mergedAddress = details.address ? { ...c.address, ...details.address } : c.address;
+
+        return {
+          ...c,
+          ...details,
+          initials: details.initials || newInitials,
+          maskedAccountNumber: details.maskedAccountNumber || newMasked,
+          address: mergedAddress,
+        };
+      }
+      return c;
+    });
+
     setCustomers(updated);
     try {
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
@@ -479,7 +504,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           portalObj.customerId === target.customerId ||
           (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
         ) {
-          const updatedPortal = { ...portalObj, ...details };
+          const updatedPortal = {
+            ...portalObj,
+            ...details,
+            initials: details.initials || (details.fullName ? details.fullName.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() : portalObj.initials),
+            maskedAccountNumber: details.maskedAccountNumber || (details.accountNumber ? (details.accountNumber.length > 4 ? `PJTB-••••-${details.accountNumber.slice(-4)}` : details.accountNumber) : portalObj.maskedAccountNumber),
+            address: details.address ? { ...portalObj.address, ...details.address } : portalObj.address,
+          };
           localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updatedPortal));
         }
       }
@@ -490,13 +521,64 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     logAuditEntry(
       "EDIT_CUSTOMER_PROFILE",
       target.customerId,
-      `Customer: ${target.fullName}`,
-      "Authorized administrative update of profile metadata",
+      `Customer: ${details.fullName || target.fullName}`,
+      "Administrator updated customer profile details",
       JSON.stringify(Object.keys(details))
     );
 
-    toast.success("Customer details updated", {
-      description: "Changes applied successfully to customer registry.",
+    toast.success("Customer details updated successfully", {
+      description: `All modifications applied to ${details.fullName || target.fullName} (${target.customerId}).`,
+    });
+  };
+
+  const deleteCustomer = (customerId: string) => {
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
+    if (!target) return;
+
+    const updated = customers.filter((c) => c.id !== target.id && c.customerId !== target.customerId);
+    setCustomers(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
+          localStorage.removeItem("pjtb_current_portal_customer");
+        }
+      }
+      localStorage.removeItem(`pjtb_portal_tx_${target.customerId}`);
+      localStorage.removeItem(`pjtb_portal_tx_${target.id}`);
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
+
+    logAuditEntry(
+      "DELETE_ACCOUNT",
+      target.customerId,
+      `Customer: ${target.fullName} (${target.customerId})`,
+      "Administrator permanently deleted customer account from system registry",
+      undefined,
+      "Critical"
+    );
+
+    const newNotif: SystemNotification = {
+      id: `notif-${Date.now()}`,
+      title: `Account Deleted: ${target.fullName}`,
+      message: `Customer ${target.fullName} (${target.customerId}) was permanently removed by ${activeAdmin.name}.`,
+      timestamp: "Just now",
+      isRead: false,
+      severity: "Critical",
+      category: "Customer",
+      actionUrl: "customers",
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    toast.error(`Customer account deleted`, {
+      description: `${target.fullName} (${target.customerId}) permanently removed from registry.`,
     });
   };
 
@@ -820,6 +902,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         markAllNotificationsRead,
         activeAdmin,
         approveCustomerAccount,
+        deleteCustomer,
         creditDebitCustomer,
         editTransaction,
         resetToDefaults,

@@ -19,6 +19,7 @@ import {
   DollarSign,
   PlusCircle,
   MinusCircle,
+  Trash2,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { CustomerRecord, CustomerAccountStatus, VerificationStatus } from "../types";
@@ -31,7 +32,7 @@ interface CustomerManagementProps {
 }
 
 export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialFilter = "All" }) => {
-  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount } = useAdminData();
+  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount, deleteCustomer } = useAdminData();
 
   // Search & Filter state
   const [filterTab, setFilterTab] = useState<string>(initialFilter);
@@ -44,6 +45,8 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
+  const [profileModalEditMode, setProfileModalEditMode] = useState<boolean>(false);
+  const [customerToDelete, setCustomerToDelete] = useState<CustomerRecord | null>(null);
   const [profileModalInitialTab, setProfileModalInitialTab] = useState<
     "profile" | "account" | "transactions" | "verification" | "security" | "notes"
   >("profile");
@@ -120,10 +123,12 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
 
   const openProfile = (
     c: CustomerRecord,
-    tab: "profile" | "account" | "transactions" | "verification" | "security" | "notes" = "profile"
+    tab: "profile" | "account" | "transactions" | "verification" | "security" | "notes" = "profile",
+    editMode: boolean = false
   ) => {
     setSelectedCustomer(c);
     setProfileModalInitialTab(tab);
+    setProfileModalEditMode(editMode);
     setProfileModalOpen(true);
     setActiveMenuId(null);
   };
@@ -404,28 +409,28 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                             <div className="absolute right-0 mt-1 w-56 origin-top-right rounded-xl border border-gold/30 bg-navy-deep/95 p-1.5 text-ivory shadow-2xl backdrop-blur-xl z-30 animate-in fade-in zoom-in-95 duration-150">
                               <button
                                 type="button"
-                                onClick={() => openProfile(c, "profile")}
+                                onClick={() => openProfile(c, "profile", false)}
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-ivory/90 hover:bg-ivory/10"
                               >
                                 <Eye className="h-3.5 w-3.5 text-gold" /> View Customer Profile
                               </button>
                               <button
                                 type="button"
-                                onClick={() => openProfile(c, "verification")}
+                                onClick={() => openProfile(c, "profile", true)}
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-gold hover:bg-gold/15 font-semibold"
+                              >
+                                <Edit className="h-3.5 w-3.5 text-gold" /> Manage & Edit All Details
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openProfile(c, "verification", false)}
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-ivory/90 hover:bg-ivory/10"
                               >
                                 <FileCheck2 className="h-3.5 w-3.5 text-emerald-400" /> Review Verification
                               </button>
                               <button
                                 type="button"
-                                onClick={() => openProfile(c, "profile")}
-                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-ivory/90 hover:bg-ivory/10"
-                              >
-                                <Edit className="h-3.5 w-3.5 text-blue-400" /> Edit Permitted Details
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openProfile(c, "transactions")}
+                                onClick={() => openProfile(c, "transactions", false)}
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-ivory/90 hover:bg-ivory/10"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Review Account Activity
@@ -436,14 +441,14 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                                 onClick={() => openCreditDebit(c, "Credit")}
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-emerald-400 hover:bg-emerald-500/15 font-semibold"
                               >
-                                <PlusCircle className="h-3.5 w-3.5" /> ï¼‹ Credit Account
+                                <PlusCircle className="h-3.5 w-3.5" /> + Credit Account
                               </button>
                               <button
                                 type="button"
                                 onClick={() => openCreditDebit(c, "Debit")}
                                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-rose-500/15 font-semibold"
                               >
-                                <MinusCircle className="h-3.5 w-3.5" /> âˆ’ Debit Account
+                                <MinusCircle className="h-3.5 w-3.5" /> − Debit Account
                               </button>
 
                               <div className="my-1 border-t border-ivory/10" />
@@ -474,6 +479,19 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                                   </button>
                                 </>
                               )}
+
+                              <div className="my-1 border-t border-ivory/10" />
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomerToDelete(c);
+                                  setActiveMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/15 font-semibold"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-red-400" /> Delete Customer
+                              </button>
                             </div>
                           )}
                           </div>
@@ -526,6 +544,7 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
         <CustomerProfileModal
           customer={selectedCustomer}
           initialTab={profileModalInitialTab}
+          initialEditMode={profileModalEditMode}
           onClose={() => setProfileModalOpen(false)}
           onOpenStatusAction={(status) => {
             setProfileModalOpen(false);
@@ -553,6 +572,50 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
             setTargetStatus(null);
           }}
         />
+      )}
+
+      {/* Permanent Account Deletion Modal */}
+      {customerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-red-500/40 bg-[#0A1628] p-6 shadow-2xl text-ivory space-y-4">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 border border-red-500/30">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-display font-bold">Permanently Delete Customer</h3>
+                <p className="text-xs text-ivory/60 font-mono">ID: {customerToDelete.customerId}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-ivory/80 leading-relaxed">
+              Are you sure you want to permanently delete customer account{" "}
+              <strong className="text-ivory">{customerToDelete.fullName}</strong> ({customerToDelete.maskedAccountNumber})?
+              This will remove all records, purge customer portal sessions, and permanently erase ledger associations.
+              This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCustomerToDelete(null)}
+                className="rounded-xl border border-ivory/20 px-4 py-2 text-xs text-ivory/70 hover:bg-ivory/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCustomer(customerToDelete.id);
+                  setCustomerToDelete(null);
+                }}
+                className="rounded-xl border border-red-500/50 bg-red-500 px-4 py-2 text-xs font-bold text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+              >
+                Confirm Delete Customer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
