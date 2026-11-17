@@ -55,6 +55,7 @@ export const AdminLayout: React.FC = () => {
     globalSearch,
     setGlobalSearch,
     notifications,
+    customers,
     activeAdmin,
     resetToDefaults,
   } = useAdminData();
@@ -64,10 +65,14 @@ export const AdminLayout: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState("");
 
-  const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
-  const pendingVerificationCount = customers.filter(
-    (c) => c.accountStatus === "Pending" || c.verificationStatus === "Pending"
-  ).length;
+  const unreadNotifsCount = Array.isArray(notifications)
+    ? notifications.filter((n) => Boolean(n && !n.isRead)).length
+    : 0;
+  const pendingVerificationCount = Array.isArray(customers)
+    ? customers.filter(
+        (c) => Boolean(c && (c.accountStatus === "Pending" || c.verificationStatus === "Pending"))
+      ).length
+    : 0;
 
   useEffect(() => {
     const updateTime = () => {

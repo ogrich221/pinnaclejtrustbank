@@ -28,7 +28,9 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
   const [editingTx, setEditingTx] = useState<TransactionRecord | null>(null);
 
   const filteredTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
     return transactions.filter((t) => {
+      if (!t) return false;
       // Type/Direction filter
       if (filterType === "Deposits" && t.direction !== "Inbound") return false;
       if (filterType === "Withdrawals" && t.direction !== "Outbound") return false;
@@ -38,10 +40,10 @@ export const TransactionMonitoring: React.FC<TransactionMonitoringProps> = ({ in
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesRef = t.reference.toLowerCase().includes(q);
-        const matchesName = t.customerName.toLowerCase().includes(q);
-        const matchesId = t.customerId.toLowerCase().includes(q);
-        const matchesPurpose = t.purpose.toLowerCase().includes(q);
+        const matchesRef = (t.reference || "").toLowerCase().includes(q);
+        const matchesName = (t.customerName || "").toLowerCase().includes(q);
+        const matchesId = (t.customerId || "").toLowerCase().includes(q);
+        const matchesPurpose = (t.purpose || "").toLowerCase().includes(q);
         if (!matchesRef && !matchesName && !matchesId && !matchesPurpose) return false;
       }
 

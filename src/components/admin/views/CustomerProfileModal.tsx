@@ -349,9 +349,9 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               { id: "profile", label: "Profile Information", icon: User },
               { id: "account", label: "Account Information", icon: CreditCard },
               { id: "transactions", label: `Transaction History (${customerTransactions.length})`, icon: History },
-              { id: "verification", label: `Verification Docs (${customer.documents.length})`, icon: FileCheck2 },
-              { id: "security", label: `Security & Access (${customer.securityHistory.length})`, icon: ShieldCheck },
-              { id: "notes", label: `Administrative Notes (${customer.notes.length})`, icon: StickyNote },
+              { id: "verification", label: `Verification Docs (${(customer.documents || []).length})`, icon: FileCheck2 },
+              { id: "security", label: `Security & Access (${(customer.securityHistory || []).length})`, icon: ShieldCheck },
+              { id: "notes", label: `Administrative Notes (${(customer.notes || []).length})`, icon: StickyNote },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -512,8 +512,9 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                       <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4 sm:col-span-2">
                         <p className="text-[10px] uppercase tracking-wider text-ivory/50">Physical Domicile Address</p>
                         <p className="mt-1 font-semibold text-ivory text-sm">
-                          {customer.address.street}, {customer.address.city}
-                          {customer.address.postalCode ? `, ${customer.address.postalCode}` : ""}, {customer.address.country}
+                          {customer.address?.street || "N/A"}, {customer.address?.city || "N/A"}
+                          {customer.address?.postalCode ? `, ${customer.address.postalCode}` : ""},{" "}
+                          {customer.address?.country || customer.jurisdiction || "N/A"}
                         </p>
                       </div>
                       <div className="rounded-xl border border-ivory/10 bg-navy/40 p-4">
@@ -970,13 +971,13 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                 </button>
               </div>
 
-              {customer.documents.length === 0 ? (
+              {(customer.documents || []).length === 0 ? (
                 <div className="rounded-xl border border-ivory/10 bg-navy/30 p-8 text-center text-ivory/60 text-xs">
                   No verification documents attached yet. Click "Attach Custom KYC Document" to register one.
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {customer.documents.map((doc) => (
+                  {(customer.documents || []).map((doc) => (
                     <div key={doc.id} className="rounded-xl border border-ivory/15 bg-navy/50 p-5 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2.5">
@@ -1077,7 +1078,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               <div>
                 <h4 className="text-sm font-semibold uppercase tracking-wider text-gold mb-3">Recent Access & Session Log</h4>
                 <div className="divide-y divide-ivory/10 rounded-xl border border-ivory/10 bg-navy/40 overflow-hidden text-xs">
-                  {customer.securityHistory.map((sec) => (
+                  {(customer.securityHistory || []).map((sec) => (
                     <div key={sec.id} className="p-3.5 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Lock className="h-4 w-4 text-gold" />
@@ -1146,12 +1147,12 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               {/* Notes List */}
               <div className="space-y-3">
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-ivory/60">
-                  Historical Records ({customer.notes.length})
+                  Historical Records ({(customer.notes || []).length})
                 </h4>
-                {customer.notes.length === 0 ? (
+                {(customer.notes || []).length === 0 ? (
                   <p className="text-xs text-ivory/50 italic">No internal notes attached yet.</p>
                 ) : (
-                  customer.notes.map((note) => (
+                  (customer.notes || []).map((note) => (
                     <div key={note.id} className="rounded-xl border border-ivory/10 bg-navy/40 p-4 text-xs space-y-2">
                       <div className="flex items-center justify-between border-b border-ivory/10 pb-2">
                         <div className="flex items-center gap-2">

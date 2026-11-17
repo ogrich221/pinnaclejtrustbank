@@ -28,23 +28,23 @@ export const AnalyticsView: React.FC = () => {
   const { customers, transactions } = useAdminData();
   const [dateRange, setDateRange] = useState<string>("Last 30 Days");
 
-  const totalVolumeUSD = transactions.reduce(
-    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
-    0
-  );
-  const inboundTxs = transactions.filter((t) => t.direction === "Inbound");
-  const outboundTxs = transactions.filter((t) => t.direction === "Outbound");
+  const totalVolumeUSD = Array.isArray(transactions)
+    ? transactions.reduce((acc, t) => acc + (t && t.currency === "USD" ? t.amount || 0 : (t?.amount || 0) * 1.1), 0)
+    : 0;
+  const inboundTxs = Array.isArray(transactions) ? transactions.filter((t) => t && t.direction === "Inbound") : [];
+  const outboundTxs = Array.isArray(transactions) ? transactions.filter((t) => t && t.direction === "Outbound") : [];
   const totalInboundUSD = inboundTxs.reduce(
-    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    (acc, t) => acc + (t.currency === "USD" ? t.amount || 0 : (t.amount || 0) * 1.1),
     0
   );
   const totalOutboundUSD = outboundTxs.reduce(
-    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
+    (acc, t) => acc + (t.currency === "USD" ? t.amount || 0 : (t.amount || 0) * 1.1),
     0
   );
 
-  const activeCount = customers.filter((c) => c.accountStatus === "Active").length;
-  const pendingCount = customers.filter(
+  const safeCustomers = Array.isArray(customers) ? customers.filter(Boolean) : [];
+  const activeCount = safeCustomers.filter((c) => c.accountStatus === "Active").length;
+  const pendingCount = safeCustomers.filter(
     (c) => c.verificationStatus === "Pending" || c.accountStatus === "Pending"
   ).length;
 
@@ -59,36 +59,33 @@ export const AnalyticsView: React.FC = () => {
     },
   ];
 
+  const docsCount = safeCustomers.filter((c) => Array.isArray(c.documents) && c.documents.length > 0).length;
+
   const verificationFunnel = [
     {
       label: "Submitted Registration",
-      value: customers.length.toString(),
+      value: safeCustomers.length.toString(),
       percent: 100,
       color: "bg-blue-400",
     },
     {
       label: "Identity & Passport KYC",
-      value: customers.filter((c) => c.documents.length > 0).length.toString(),
-      percent:
-        customers.length > 0
-          ? Math.round(
-              (customers.filter((c) => c.documents.length > 0).length / customers.length) * 100
-            )
-          : 0,
+      value: docsCount.toString(),
+      percent: safeCustomers.length > 0 ? Math.round((docsCount / safeCustomers.length) * 100) : 0,
       color: "bg-cyan-400",
     },
     {
       label: "Compliance Verification",
       value: pendingCount.toString(),
       percent:
-        customers.length > 0 ? Math.round((pendingCount / customers.length) * 100) : 0,
+        safeCustomers.length > 0 ? Math.round((pendingCount / safeCustomers.length) * 100) : 0,
       color: "bg-gold",
     },
     {
       label: "Fully Approved & Issued",
       value: activeCount.toString(),
       percent:
-        customers.length > 0 ? Math.round((activeCount / customers.length) * 100) : 0,
+        safeCustomers.length > 0 ? Math.round((activeCount / safeCustomers.length) * 100) : 0,
       color: "bg-emerald-400",
     },
   ];
@@ -148,10 +145,10 @@ export const AnalyticsView: React.FC = () => {
         <div className="rounded-2xl border border-ivory/10 bg-white/[0.04] p-5 backdrop-blur-md">
           <span className="text-[10px] uppercase font-mono tracking-wider text-ivory/50">Active Account Rate</span>
           <p className="mt-2 text-2xl font-display font-bold text-ivory">
-            {customers.length > 0 ? `${Math.round((activeCount / customers.length) * 100)}%` : "0%"}
+            {safeCustomers.length > 0 ? `${Math.round((activeCount / safeCustomers.length) * 100)}%` : "0%"}
           </p>
           <span className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
-            <ShieldCheck className="h-3 w-3" /> {activeCount} active of {customers.length} total
+            <ShieldCheck className="h-3 w-3" /> {activeCount} active of {safeCustomers.length} total
           </span>
         </div>
 

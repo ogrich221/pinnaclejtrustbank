@@ -97,11 +97,100 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: "pjtb_admin_notifications_v3",
 };
 
+export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const id = String(raw.id || raw.customerId || `cust-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`);
+  const customerId = String(raw.customerId || raw.id || `PJ-${Math.floor(10000 + Math.random() * 89999)}`);
+  const fullName = String(raw.fullName || `${raw.firstName || ""} ${raw.lastName || ""}`.trim() || "Account Holder");
+
+  let initials = raw.initials;
+  if (!initials || typeof initials !== "string") {
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      initials = `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    } else if (parts.length === 1 && parts[0].length >= 2) {
+      initials = parts[0].substring(0, 2).toUpperCase();
+    } else {
+      initials = "PJ";
+    }
+  }
+
+  const rawAcc = String(
+    raw.accountNumber ||
+      `PJTB-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`
+  );
+  const cleanAcc = rawAcc.replace(/\s+/g, "");
+  const maskedAccountNumber =
+    raw.maskedAccountNumber || (cleanAcc.length >= 4 ? `PJTB-••••-${cleanAcc.slice(-4)}` : cleanAcc);
+
+  const address =
+    raw.address && typeof raw.address === "object"
+      ? {
+          street: String(raw.address.street || raw.residentialAddress || "N/A"),
+          city: String(raw.address.city || raw.city || "N/A"),
+          postalCode: String(raw.address.postalCode || raw.postalCode || "N/A"),
+          country: String(raw.address.country || raw.countryOfResidence || raw.jurisdiction || "N/A"),
+        }
+      : {
+          street: "N/A",
+          city: "N/A",
+          postalCode: "N/A",
+          country: String(raw.jurisdiction || "N/A"),
+        };
+
+  const balance = typeof raw.balance === "number" && !isNaN(raw.balance) ? raw.balance : 0;
+  const availableBalance =
+    typeof raw.availableBalance === "number" && !isNaN(raw.availableBalance) ? raw.availableBalance : balance;
+  const holdBalance = typeof raw.holdBalance === "number" && !isNaN(raw.holdBalance) ? raw.holdBalance : 0;
+
+  return {
+    id,
+    customerId,
+    fullName,
+    initials,
+    email: String(raw.email || "client@pinnaclejtrustbank.online"),
+    phone: String(raw.phone || "+1 (555) 000-0000"),
+    accountNumber: rawAcc,
+    maskedAccountNumber,
+    routingNumber: String(raw.routingNumber || "021000021"),
+    accountType: raw.accountType || "Private Wealth Checking",
+    tier: raw.tier || "Gold",
+    currency: raw.currency || "USD",
+    balance,
+    availableBalance,
+    holdBalance,
+    dateOpened: String(raw.dateOpened || raw.registrationDate || new Date().toISOString().substring(0, 10)),
+    registrationDate: String(raw.registrationDate || raw.dateOpened || new Date().toISOString().substring(0, 10)),
+    jurisdiction: String(raw.jurisdiction || "United States (FCA / FINCEN)"),
+    twoFactorEnabled: Boolean(raw.twoFactorEnabled ?? true),
+    verificationStatus: (raw.verificationStatus || "Pending") as VerificationStatus,
+    accountStatus: (raw.accountStatus || "Pending") as CustomerAccountStatus,
+    lastLogin: String(raw.lastLogin || "Pending first session"),
+    address,
+    documents: Array.isArray(raw.documents) ? raw.documents : [],
+    notes: Array.isArray(raw.notes) ? raw.notes : [],
+    securityHistory: Array.isArray(raw.securityHistory) ? raw.securityHistory : [],
+  };
+}
+
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [customers, setCustomers] = useState<CustomerRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-      let list: CustomerRecord[] = saved ? JSON.parse(saved) : [...INITIAL_CUSTOMERS];
+      let list: CustomerRecord[] = [];
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            list = parsed.map(normalizeCustomerRecord).filter((c): c is CustomerRecord => Boolean(c));
+          }
+        } catch {}
+      }
+
+      if (list.length === 0) {
+        list = INITIAL_CUSTOMERS.map(normalizeCustomerRecord).filter((c): c is CustomerRecord => Boolean(c));
+      }
 
       // Check if newly created customer in portal session or pending registration exists
       const checkKeys = ["pjtb_current_portal_customer", "pjtb_pending_registration"];
@@ -110,16 +199,18 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const itemStr = localStorage.getItem(key);
         if (itemStr) {
           try {
-            const c = JSON.parse(itemStr);
-            if (c && (c.id || c.customerId)) {
+            const parsed = JSON.parse(itemStr);
+            const norm = normalizeCustomerRecord(parsed);
+            if (norm) {
               const exists = list.some(
                 (existing) =>
-                  existing.id === c.id ||
-                  existing.customerId === c.customerId ||
-                  (existing.email && c.email && existing.email.toLowerCase() === c.email.toLowerCase())
+                  existing &&
+                  (existing.id === norm.id ||
+                    existing.customerId === norm.customerId ||
+                    (existing.email && norm.email && existing.email.toLowerCase() === norm.email.toLowerCase()))
               );
               if (!exists) {
-                list = [c, ...list];
+                list = [norm, ...list];
                 merged = true;
               }
             }
@@ -132,14 +223,18 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       return list;
     } catch {
-      return INITIAL_CUSTOMERS;
+      return INITIAL_CUSTOMERS.map(normalizeCustomerRecord).filter((c): c is CustomerRecord => Boolean(c));
     }
   });
 
   const [transactions, setTransactions] = useState<TransactionRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      return INITIAL_TRANSACTIONS;
     } catch {
       return INITIAL_TRANSACTIONS;
     }
@@ -148,7 +243,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-      return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      return INITIAL_AUDIT_LOGS;
     } catch {
       return INITIAL_AUDIT_LOGS;
     }
@@ -157,7 +256,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [notifications, setNotifications] = useState<SystemNotification[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      return INITIAL_NOTIFICATIONS;
     } catch {
       return INITIAL_NOTIFICATIONS;
     }
@@ -236,14 +339,21 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
       if (stored) {
-        const storedList: CustomerRecord[] = JSON.parse(stored);
-        const missingInState = storedList.filter(
-          (sc) => !customers.some((c) => c.id === sc.id || c.customerId === sc.customerId)
-        );
-        if (missingInState.length > 0) {
-          setCustomers((prev) => [...missingInState, ...prev]);
-          return;
-        }
+        try {
+          const storedListRaw = JSON.parse(stored);
+          if (Array.isArray(storedListRaw)) {
+            const storedList = storedListRaw
+              .map(normalizeCustomerRecord)
+              .filter((c): c is CustomerRecord => Boolean(c));
+            const missingInState = storedList.filter(
+              (sc) => sc && !customers.some((c) => c && (c.id === sc.id || c.customerId === sc.customerId))
+            );
+            if (missingInState.length > 0) {
+              setCustomers((prev) => [...missingInState, ...prev]);
+              return;
+            }
+          }
+        } catch {}
       }
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
     } catch {
@@ -279,7 +389,15 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const handleSync = useCallback(() => {
     try {
       const storedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-      let list: CustomerRecord[] = storedCustomers ? JSON.parse(storedCustomers) : [];
+      let list: CustomerRecord[] = [];
+      if (storedCustomers) {
+        try {
+          const parsed = JSON.parse(storedCustomers);
+          if (Array.isArray(parsed)) {
+            list = parsed.map(normalizeCustomerRecord).filter((c): c is CustomerRecord => Boolean(c));
+          }
+        } catch {}
+      }
 
       const checkKeys = ["pjtb_current_portal_customer", "pjtb_pending_registration"];
       let modified = false;
@@ -288,15 +406,17 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (itemStr) {
           try {
             const c = JSON.parse(itemStr);
-            if (c && (c.id || c.customerId)) {
+            const norm = normalizeCustomerRecord(c);
+            if (norm) {
               const exists = list.some(
                 (existing) =>
-                  existing.id === c.id ||
-                  existing.customerId === c.customerId ||
-                  (existing.email && c.email && existing.email.toLowerCase() === c.email.toLowerCase())
+                  existing &&
+                  (existing.id === norm.id ||
+                    existing.customerId === norm.customerId ||
+                    (existing.email && norm.email && existing.email.toLowerCase() === norm.email.toLowerCase()))
               );
               if (!exists) {
-                list = [c, ...list];
+                list = [norm, ...list];
                 modified = true;
               }
             }
@@ -309,15 +429,45 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (list.length > 0) {
-        setCustomers(list);
+        setCustomers((prev) => {
+          if (prev.length === list.length) {
+            const hasDiff = list.some((item, idx) => {
+              const prevItem = prev[idx];
+              return (
+                !prevItem ||
+                prevItem.id !== item.id ||
+                prevItem.accountStatus !== item.accountStatus ||
+                prevItem.verificationStatus !== item.verificationStatus ||
+                prevItem.balance !== item.balance
+              );
+            });
+            if (!hasDiff) return prev;
+          }
+          return list;
+        });
       }
 
       const storedTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      if (storedTx) setTransactions(JSON.parse(storedTx));
+      if (storedTx) {
+        try {
+          const parsedTx = JSON.parse(storedTx);
+          if (Array.isArray(parsedTx)) setTransactions(parsedTx);
+        } catch {}
+      }
       const storedNotifs = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-      if (storedNotifs) setNotifications(JSON.parse(storedNotifs));
+      if (storedNotifs) {
+        try {
+          const parsedNotifs = JSON.parse(storedNotifs);
+          if (Array.isArray(parsedNotifs)) setNotifications(parsedNotifs);
+        } catch {}
+      }
       const storedLogs = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
-      if (storedLogs) setAuditLogs(JSON.parse(storedLogs));
+      if (storedLogs) {
+        try {
+          const parsedLogs = JSON.parse(storedLogs);
+          if (Array.isArray(parsedLogs)) setAuditLogs(parsedLogs);
+        } catch {}
+      }
     } catch {}
   }, []);
 

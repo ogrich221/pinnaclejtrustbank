@@ -15,9 +15,10 @@ export const NotificationsView: React.FC = () => {
   const { notifications, markNotificationRead, markAllNotificationsRead, setCurrentView } = useAdminData();
   const [filterCategory, setFilterCategory] = useState<string>("All");
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const safeNotifs = Array.isArray(notifications) ? notifications.filter(Boolean) : [];
+  const unreadCount = safeNotifs.filter((n) => !n.isRead).length;
 
-  const filteredNotifications = notifications.filter((n) => {
+  const filteredNotifications = safeNotifs.filter((n) => {
     if (filterCategory === "Unread") return !n.isRead;
     if (filterCategory === "Security") return n.category === "Security";
     if (filterCategory === "Verification") return n.category === "Verification";

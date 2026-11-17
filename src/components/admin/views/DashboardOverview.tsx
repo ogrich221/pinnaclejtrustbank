@@ -25,24 +25,36 @@ export const DashboardOverview: React.FC = () => {
   const [selectedCustomerForModal, setSelectedCustomerForModal] = useState<CustomerRecord | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
-  // Metrics computation from real live state
-  const totalCustomersCount = customers.length;
-  const activeAccountsCount = customers.filter((c) => c.accountStatus === "Active").length;
-  const pendingCustomers = customers.filter(
-    (c) => c.verificationStatus === "Pending" || c.accountStatus === "Pending"
-  );
+  // Metrics computation from real live state with complete null safety
+  const totalCustomersCount = Array.isArray(customers) ? customers.filter(Boolean).length : 0;
+  const activeAccountsCount = Array.isArray(customers)
+    ? customers.filter((c) => Boolean(c && c.accountStatus === "Active")).length
+    : 0;
+  const pendingCustomers = Array.isArray(customers)
+    ? customers.filter(
+        (c) => Boolean(c && (c.verificationStatus === "Pending" || c.accountStatus === "Pending"))
+      )
+    : [];
   const pendingVerificationCount = pendingCustomers.length;
-  const restrictedAccountsCount = customers.filter(
-    (c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended"
-  ).length;
+  const restrictedAccountsCount = Array.isArray(customers)
+    ? customers.filter(
+        (c) => Boolean(c && (c.accountStatus === "Restricted" || c.accountStatus === "Suspended"))
+      ).length
+    : 0;
   const flaggedCount =
-    customers.filter((c) => c.accountStatus === "Flagged").length +
-    transactions.filter((t) => t.status === "Flagged").length;
+    (Array.isArray(customers)
+      ? customers.filter((c) => Boolean(c && c.accountStatus === "Flagged")).length
+      : 0) +
+    (Array.isArray(transactions)
+      ? transactions.filter((t) => Boolean(t && t.status === "Flagged")).length
+      : 0);
 
-  const totalVolumeUSD = transactions.reduce(
-    (acc, t) => acc + (t.currency === "USD" ? t.amount : t.amount * 1.1),
-    0
-  );
+  const totalVolumeUSD = Array.isArray(transactions)
+    ? transactions.reduce(
+        (acc, t) => acc + (t && t.currency === "USD" ? t.amount || 0 : (t?.amount || 0) * 1.1),
+        0
+      )
+    : 0;
 
   const kpis = [
     {
@@ -202,52 +214,70 @@ export const DashboardOverview: React.FC = () => {
           </div>
 
           <div className="divide-y divide-ivory/10 rounded-2xl border border-ivory/10 bg-navy-deep/60 overflow-hidden">
-            {pendingCustomers.map((pc) => (
-              <div key={pc.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors">
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/40 bg-gold/15 text-sm font-bold text-gold font-display shrink-0">
-                    {pc.initials}
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-sm text-ivory">{pc.fullName}</p>
-                      <span className="rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
-                        Awaiting Approval
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-ivory/60 font-mono mt-0.5">
-                      <span>ID: <strong className="text-ivory">{pc.customerId}</strong></span>
-                      <span>•</span>
-                      <span>{pc.accountNumber}</span>
-                      <span>•</span>
-                      <span>{pc.accountType} ({pc.currency})</span>
-                      <span>•</span>
-                      <span>{pc.email}</span>
-                    </div>
-                  </div>
-                </div>
+            {pendingCustomers.map((pc) => {
+              if (!pc) return null;
+              const initials = pc.initials || (pc.fullName ? pc.fullName.slice(0, 2).toUpperCase() : "PJ");
+              const fullName = pc.fullName || "Applicant";
+              const customerId = pc.customerId || pc.id || "N/A";
+              const accountNumber = pc.accountNumber || "N/A";
+              const accountType = pc.accountType || "Checking";
+              const currency = pc.currency || "USD";
+              const email = pc.email || "N/A";
 
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => approveCustomerAccount(pc.id)}
-                    className="rounded-xl border border-emerald-500 bg-emerald-500/20 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-md flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCustomerForModal(pc);
-                      setProfileModalOpen(true);
-                    }}
-                    className="rounded-xl border border-ivory/20 px-3.5 py-2 text-xs text-ivory/70 hover:bg-ivory/10 transition-colors"
-                  >
-                    Inspect Profile
-                  </button>
+              return (
+                <div
+                  key={pc.id || customerId}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/40 bg-gold/15 text-sm font-bold text-gold font-display shrink-0">
+                      {initials}
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-sm text-ivory">{fullName}</p>
+                        <span className="rounded-full border border-gold/40 bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
+                          Awaiting Approval
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ivory/60 font-mono mt-0.5">
+                        <span>
+                          ID: <strong className="text-ivory">{customerId}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>{accountNumber}</span>
+                        <span>•</span>
+                        <span>
+                          {accountType} ({currency})
+                        </span>
+                        <span>•</span>
+                        <span>{email}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => approveCustomerAccount(pc.id || customerId)}
+                      className="rounded-xl border border-emerald-500 bg-emerald-500/20 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-md flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCustomerForModal(pc);
+                        setProfileModalOpen(true);
+                      }}
+                      className="rounded-xl border border-ivory/20 px-3.5 py-2 text-xs text-ivory/70 hover:bg-ivory/10 transition-colors"
+                    >
+                      Inspect Profile
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

@@ -71,7 +71,9 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
 
   // Filter & Search Logic
   const filteredCustomers = useMemo(() => {
+    if (!Array.isArray(customers)) return [];
     return customers.filter((c) => {
+      if (!c) return false;
       // Filter tab
       if (filterTab === "Active" && c.accountStatus !== "Active") return false;
       if (filterTab === "Pending" && c.accountStatus !== "Pending" && c.verificationStatus !== "Pending") return false;
@@ -83,10 +85,10 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
       // Search term
       if (globalSearch.trim()) {
         const query = globalSearch.toLowerCase();
-        const matchesName = c.fullName.toLowerCase().includes(query);
-        const matchesEmail = c.email.toLowerCase().includes(query);
-        const matchesId = c.customerId.toLowerCase().includes(query);
-        const matchesAccount = c.accountNumber.toLowerCase().includes(query);
+        const matchesName = (c.fullName || "").toLowerCase().includes(query);
+        const matchesEmail = (c.email || "").toLowerCase().includes(query);
+        const matchesId = (c.customerId || "").toLowerCase().includes(query);
+        const matchesAccount = (c.accountNumber || "").toLowerCase().includes(query);
         if (!matchesName && !matchesEmail && !matchesId && !matchesAccount) return false;
       }
 
@@ -97,17 +99,18 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
   // Sorting
   const sortedCustomers = useMemo(() => {
     return [...filteredCustomers].sort((a, b) => {
+      if (!a || !b) return 0;
       let comp = 0;
       if (sortField === "name") {
-        comp = a.fullName.localeCompare(b.fullName);
+        comp = (a.fullName || "").localeCompare(b.fullName || "");
       } else if (sortField === "date") {
         const timeA = a.registrationDate ? new Date(a.registrationDate).getTime() : 0;
         const timeB = b.registrationDate ? new Date(b.registrationDate).getTime() : 0;
         comp = (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
       } else if (sortField === "status") {
-        comp = a.accountStatus.localeCompare(b.accountStatus);
+        comp = (a.accountStatus || "").localeCompare(b.accountStatus || "");
       } else if (sortField === "verification") {
-        comp = a.verificationStatus.localeCompare(b.verificationStatus);
+        comp = (a.verificationStatus || "").localeCompare(b.verificationStatus || "");
       }
       return sortOrder === "asc" ? comp : -comp;
     });
@@ -192,12 +195,43 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ivory/10 pb-4">
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {[
-            { id: "All", label: "All Customers", count: customers.length },
-            { id: "Active", label: "Active", count: customers.filter((c) => c.accountStatus === "Active").length },
-            { id: "Pending", label: "Pending Approval", count: customers.filter((c) => c.accountStatus === "Pending" || c.verificationStatus === "Pending").length },
-            { id: "Verified", label: "Verified", count: customers.filter((c) => c.verificationStatus === "Verified").length },
-            { id: "Restricted", label: "Restricted", count: customers.filter((c) => c.accountStatus === "Restricted").length },
-            { id: "Suspended", label: "Suspended", count: customers.filter((c) => c.accountStatus === "Suspended").length },
+            { id: "All", label: "All Customers", count: Array.isArray(customers) ? customers.filter(Boolean).length : 0 },
+            {
+              id: "Active",
+              label: "Active",
+              count: Array.isArray(customers)
+                ? customers.filter((c) => Boolean(c && c.accountStatus === "Active")).length
+                : 0,
+            },
+            {
+              id: "Pending",
+              label: "Pending Approval",
+              count: Array.isArray(customers)
+                ? customers.filter((c) => Boolean(c && (c.accountStatus === "Pending" || c.verificationStatus === "Pending")))
+                    .length
+                : 0,
+            },
+            {
+              id: "Verified",
+              label: "Verified",
+              count: Array.isArray(customers)
+                ? customers.filter((c) => Boolean(c && c.verificationStatus === "Verified")).length
+                : 0,
+            },
+            {
+              id: "Restricted",
+              label: "Restricted",
+              count: Array.isArray(customers)
+                ? customers.filter((c) => Boolean(c && c.accountStatus === "Restricted")).length
+                : 0,
+            },
+            {
+              id: "Suspended",
+              label: "Suspended",
+              count: Array.isArray(customers)
+                ? customers.filter((c) => Boolean(c && c.accountStatus === "Suspended")).length
+                : 0,
+            },
           ].map((tab) => {
             const isActive = filterTab === tab.id;
             return (

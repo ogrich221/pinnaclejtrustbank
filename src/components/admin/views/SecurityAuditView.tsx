@@ -20,19 +20,21 @@ export const SecurityAuditView: React.FC = () => {
   const [severityFilter, setSeverityFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const restrictedCount = customers.filter(
-    (c) => c.accountStatus === "Restricted" || c.accountStatus === "Suspended"
-  ).length;
+  const restrictedCount = Array.isArray(customers)
+    ? customers.filter((c) => Boolean(c && (c.accountStatus === "Restricted" || c.accountStatus === "Suspended"))).length
+    : 0;
 
   const filteredLogs = useMemo(() => {
+    if (!Array.isArray(auditLogs)) return [];
     return auditLogs.filter((log) => {
+      if (!log) return false;
       if (severityFilter !== "All" && log.severity !== severityFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesAction = log.action.toLowerCase().includes(q);
-        const matchesAdmin = log.adminName.toLowerCase().includes(q);
-        const matchesTarget = log.targetDescription.toLowerCase().includes(q);
-        const matchesReason = log.reason.toLowerCase().includes(q);
+        const matchesAction = (log.action || "").toLowerCase().includes(q);
+        const matchesAdmin = (log.adminName || "").toLowerCase().includes(q);
+        const matchesTarget = (log.targetDescription || "").toLowerCase().includes(q);
+        const matchesReason = (log.reason || "").toLowerCase().includes(q);
         if (!matchesAction && !matchesAdmin && !matchesTarget && !matchesReason) return false;
       }
       return true;

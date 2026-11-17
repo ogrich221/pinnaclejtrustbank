@@ -21,7 +21,8 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen
 
   if (!isOpen) return null;
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const safeNotifs = Array.isArray(notifications) ? notifications.filter(Boolean) : [];
+  const unreadCount = safeNotifs.filter((n) => !n.isRead).length;
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -81,7 +82,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ isOpen
 
         {/* Notifications List */}
         <div className="flex-1 overflow-y-auto py-4 space-y-3 scrollbar-thin">
-          {notifications.map((n) => (
+          {safeNotifs.map((n) => (
             <div
               key={n.id}
               onClick={() => handleNotificationClick(n.id, n.actionUrl)}
