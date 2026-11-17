@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CustomerDashboard } from "@/components/portal/CustomerDashboard";
 
 export const Route = createFileRoute("/portal")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Online Banking Portal — Pinnacle J Trust Bank" },

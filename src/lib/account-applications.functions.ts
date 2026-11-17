@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { sharedCustomerSchema } from "./account-applications";
+import { profileDetailsSchema } from "./validation";
 
 const submissionSchema = z.object({
   reference: z.string().trim().min(8).max(100),
@@ -95,6 +96,48 @@ export const getCurrentCustomerApplication = createServerFn({ method: "POST" })
       accountStatus: data.status === "Approved" ? "Active" : "Pending",
       verificationStatus: data.status === "Approved" ? "Verified" : "Pending",
     };
+  });
+
+export const updateCurrentCustomerProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ profile: profileDetailsSchema }).parse(data))
+  .handler(async ({ data, context }) => {
+    const email = typeof context.claims.email === "string" ? context.claims.email.toLowerCase() : "";
+    if (!email) throw new Error("Your customer profile could not be verified");
+
+    const existing = await context.supabase
+      .from("account_applications")
+      .select("customer_key, application_data")
+      .eq("email", email)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing.error || !existing.data) throw new Error("Your customer profile could not be found");
+
+    const current = requireObject(existing.data.application_data);
+    const currentAddress = current["address"] && typeof current["address"] === "object" && !Array.isArray(current["address"])
+      ? current["address"]
+      : {};
+    const applicationData = {
+      ...current,
+      fullName: data.profile.fullName,
+      phone: data.profile.phone,
+      address: {
+        ...currentAddress,
+        street: data.profile.street,
+        city: data.profile.city,
+        country: data.profile.country,
+      },
+    };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("account_applications")
+      .update({ full_name: data.profile.fullName, application_data: asJson(applicationData) })
+      .eq("customer_key", existing.data.customer_key)
+      .eq("email", email);
+    if (error) throw new Error("Your personal details could not be saved");
+    return { ok: true };
   });
 
 export const approveSharedApplication = createServerFn({ method: "POST" })

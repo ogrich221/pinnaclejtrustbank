@@ -180,6 +180,29 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+.portal-theme {
+  color-scheme: dark;
+  --navy: oklch(0.2 0.045 255);
+  --navy-deep: oklch(0.15 0.04 255);
+  --ivory: oklch(0.985 0.003 250);
+  --gold: oklch(0.73 0.09 80);
+  --gold-soft: oklch(0.85 0.06 82);
+  --accent-foreground: oklch(0.15 0.04 255);
+}
+
+.portal-theme.portal-light {
+  color-scheme: light;
+  --navy: oklch(1 0 0);
+  --navy-deep: oklch(0.985 0.003 250);
+  --ivory: oklch(0.2 0.045 255);
+  --gold: oklch(0.55 0.11 78);
+  --gold-soft: oklch(0.48 0.1 78);
+  --accent-foreground: oklch(0.99 0.002 80);
+}
+
+.portal-light .text-emerald-400 { color: oklch(0.5 0.14 155); }
+.portal-light .text-red-400 { color: oklch(0.52 0.18 27); }
+
 @layer base {
   * {
     border-color: var(--color-border);

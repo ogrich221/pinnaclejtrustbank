@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { updateCurrentCustomerProfile } from "@/lib/account-applications.functions";
+import { profileDetailsSchema, toErrors, type FieldErrors, type ProfileDetails } from "@/lib/validation";
 import {
   CreditCard,
   ArrowUpRight,
@@ -38,6 +41,12 @@ import {
   Search,
   Mail,
   Phone,
+  Sun,
+  Moon,
+  Pencil,
+  Save,
+  X,
+  Palette,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
 import { toast } from "sonner";
@@ -45,6 +54,19 @@ import { getTransferValidationError, mapAdminTransactionStatus } from "@/lib/ban
 import type { CustomerBeneficiary, SecurityEvent } from "@/components/admin/types";
 
 type Beneficiary = CustomerBeneficiary;
+type PortalTheme = "dark" | "light";
+
+const PORTAL_THEME_KEY = "pjtb_portal_theme";
+
+function getProfileDetails(customer: any): ProfileDetails {
+  return {
+    fullName: customer?.fullName || "",
+    phone: customer?.phone || "",
+    street: customer?.address?.street || "",
+    city: customer?.address?.city || "",
+    country: customer?.address?.country || "",
+  };
+}
 
 function notifyAdminSync(detail: Record<string, string> = {}) {
   window.dispatchEvent(new Event("storage"));
@@ -133,6 +155,7 @@ interface PortalTransaction {
 export const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const updateSharedProfile = useServerFn(updateCurrentCustomerProfile);
   // Active Customer data
   const [customer, setCustomer] = useState<any>(() => {
     const defaultCustomer = {
@@ -179,6 +202,78 @@ export const CustomerDashboard: React.FC = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [showAccountNumber, setShowAccountNumber] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [portalTheme, setPortalTheme] = useState<PortalTheme>("dark");
+  const [profileForm, setProfileForm] = useState<ProfileDetails>(() => getProfileDetails(customer));
+  const [profileErrors, setProfileErrors] = useState<FieldErrors>({});
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem(PORTAL_THEME_KEY);
+      if (savedTheme === "light" || savedTheme === "dark") setPortalTheme(savedTheme);
+    } catch {
+      // Keep the default dark appearance when browser storage is unavailable.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!profileEditing) setProfileForm(getProfileDetails(customer));
+  }, [customer, profileEditing]);
+
+  const choosePortalTheme = (theme: PortalTheme) => {
+    setPortalTheme(theme);
+    try {
+      localStorage.setItem(PORTAL_THEME_KEY, theme);
+    } catch {
+      // The selected theme still applies for the current session.
+    }
+  };
+
+  const handleSaveProfile = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const result = profileDetailsSchema.safeParse(profileForm);
+    if (!result.success) {
+      setProfileErrors(toErrors(result.error));
+      return;
+    }
+
+    setProfileErrors({});
+    setProfileSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await updateSharedProfile({ data: { profile: result.data } });
+
+      const updatedCustomer = {
+        ...customer,
+        fullName: result.data.fullName,
+        phone: result.data.phone,
+        address: {
+          ...customer.address,
+          street: result.data.street,
+          city: result.data.city,
+          country: result.data.country,
+        },
+      };
+      setCustomer(updatedCustomer);
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updatedCustomer));
+      syncCustomerAction(customer, {
+        fullName: result.data.fullName,
+        phone: result.data.phone,
+        address: updatedCustomer.address,
+      }, {
+        content: "Customer updated personal profile details",
+        type: "Profile Update",
+      });
+      setProfileForm(result.data);
+      setProfileEditing(false);
+      toast.success("Personal details updated successfully");
+    } catch {
+      toast.error("We couldn't save your personal details. Please try again.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -801,14 +896,14 @@ export const CustomerDashboard: React.FC = () => {
 
   if (!customer) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-navy-deep px-6 text-ivory">
+      <div className={`portal-theme ${portalTheme === "light" ? "portal-light" : ""} flex min-h-screen items-center justify-center bg-navy-deep px-6 text-ivory`}>
         <div className="w-full max-w-md rounded-3xl border border-gold/30 bg-white/[0.04] p-8 text-center shadow-2xl">
           <LogoMark className="mx-auto h-12 w-12 text-gold" />
           <h1 className="mt-5 text-3xl font-display font-bold">Account No Longer Available</h1>
           <p className="mt-3 text-sm text-ivory/70">
             This customer record has been removed by an administrator. Contact support if you believe this is an error.
           </p>
-          <Link to="/login" className="mt-6 inline-flex rounded-xl bg-gold px-5 py-2.5 text-xs font-bold text-navy-deep">
+          <Link to="/login" className="mt-6 inline-flex rounded-xl bg-gold px-5 py-2.5 text-xs font-bold text-accent-foreground">
             Return to Sign In
           </Link>
         </div>
@@ -817,9 +912,9 @@ export const CustomerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#071426] text-[#F5F7FA] font-sans antialiased selection:bg-gold/30 selection:text-gold pb-24">
+    <div className={`portal-theme ${portalTheme === "light" ? "portal-light" : ""} min-h-screen bg-navy-deep pb-24 font-sans text-ivory antialiased selection:bg-gold/30 selection:text-gold`}>
       {/* Top Customer Portal Navigation Header - Optimized for Phones and Computers */}
-      <header className="sticky top-0 z-30 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-4 sm:px-6 py-3 sm:py-4">
+      <header className="sticky top-0 z-30 border-b border-ivory/10 bg-navy-deep/85 px-4 py-3 backdrop-blur-xl sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
             <span className="text-gold">
@@ -858,6 +953,16 @@ export const CustomerDashboard: React.FC = () => {
               </div>
               <button
                 type="button"
+                onClick={() => choosePortalTheme(portalTheme === "dark" ? "light" : "dark")}
+                className="inline-flex h-9 items-center gap-2 rounded-xl border border-ivory/15 px-2.5 text-xs text-ivory/70 transition-colors hover:bg-ivory/10 hover:text-ivory sm:px-3"
+                aria-label={`Switch to ${portalTheme === "dark" ? "white" : "black"} theme`}
+                title={`Switch to ${portalTheme === "dark" ? "white" : "black"} theme`}
+              >
+                {portalTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <span className="hidden lg:inline">{portalTheme === "dark" ? "White" : "Black"}</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleSignOut()}
                 className="rounded-xl border border-ivory/15 px-3 py-1.5 text-xs text-ivory/70 hover:bg-ivory/10 hover:text-ivory"
               >
@@ -870,35 +975,53 @@ export const CustomerDashboard: React.FC = () => {
 
       {/* Main Body Layout with Side Navigation */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
-        {/* Navigation Tabs Bar - Horizontally Scrollable on Mobile, Wrapped on Desktop */}
-        <div className="flex items-center gap-2 border-b border-ivory/10 pb-4 mb-8 text-xs overflow-x-auto scrollbar-none sm:flex-wrap -mx-4 px-4 sm:mx-0 sm:px-0">
+        {/* Banking and personal controls are grouped so the next action is easy to find. */}
+        <nav aria-label="Customer portal sections" className="mb-8 grid gap-5 border-b border-ivory/10 pb-6 lg:grid-cols-[1fr_auto]">
           {[
-            { id: "overview", label: "Account Overview", icon: CreditCard },
-            { id: "transfers", label: "Transfer Centre", icon: ArrowLeftRight },
-            { id: "transactions", label: `Transaction History (${transactions.length})`, icon: History },
-            { id: "beneficiaries", label: `Beneficiaries (${beneficiaries.length})`, icon: Users },
-            { id: "security", label: "Security & Credentials", icon: Lock },
-            { id: "settings", label: "Profile & Settings", icon: Settings },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all font-medium whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? "border border-gold/40 bg-gold/15 text-gold font-semibold shadow-md shadow-gold/10"
-                    : "border border-transparent text-ivory/70 hover:bg-white/[0.04] hover:text-ivory"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+            {
+              label: "Banking",
+              items: [
+                { id: "overview", label: "Account Overview", icon: CreditCard },
+                { id: "transfers", label: "Transfer Centre", icon: ArrowLeftRight },
+                { id: "beneficiaries", label: `Beneficiaries (${beneficiaries.length})`, icon: Users },
+                { id: "transactions", label: `Transaction History (${transactions.length})`, icon: History },
+              ],
+            },
+            {
+              label: "Personal",
+              items: [
+                { id: "settings", label: "Profile & Settings", icon: Settings },
+                { id: "security", label: "Security & Credentials", icon: Lock },
+              ],
+            },
+          ].map((group) => (
+            <div key={group.label} className="min-w-0">
+              <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-ivory/45">{group.label}</p>
+              <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 text-xs sm:mx-0 sm:flex-wrap sm:px-0">
+                {group.items.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id as any)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 font-medium transition-all ${
+                        isActive
+                          ? "border border-gold/40 bg-gold/15 font-semibold text-gold shadow-md shadow-gold/10"
+                          : "border border-transparent text-ivory/70 hover:bg-ivory/[0.06] hover:text-ivory"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
 
                 {/* Pending Administrator Approval Banner */}
         {customer.accountStatus === "Pending" && (
@@ -919,7 +1042,7 @@ export const CustomerDashboard: React.FC = () => {
         {activeTab === "overview" && (
           <div className="space-y-8 animate-in fade-in duration-200">
             {/* Top Overview Glass Banner */}
-            <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-gradient-to-br from-[#0C1B30] via-[#071426] to-[#0C1B30] p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
+            <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-gradient-to-br from-navy via-navy-deep to-navy p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
               <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
 
               <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-start">
@@ -1009,7 +1132,7 @@ export const CustomerDashboard: React.FC = () => {
                     setActiveTab("transfers");
                     setTransferType("domestic");
                   }}
-                  className="flex-1 sm:flex-initial justify-center min-h-[44px] rounded-xl bg-gold px-4 sm:px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md flex items-center gap-2"
+                  className="flex-1 sm:flex-initial justify-center min-h-[44px] rounded-xl bg-gold px-4 sm:px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft transition-all shadow-md flex items-center gap-2"
                 >
                   <ArrowUpRight className="h-4 w-4 shrink-0" /> Domestic Transfer
                 </button>
@@ -1098,7 +1221,7 @@ export const CustomerDashboard: React.FC = () => {
                 onClick={() => setTransferType("domestic")}
                 className={`rounded-xl px-5 py-2.5 text-xs font-semibold tracking-wide transition-all ${
                   transferType === "domestic"
-                    ? "bg-gold text-navy-deep font-bold shadow-lg"
+                    ? "bg-gold text-accent-foreground font-bold shadow-lg"
                     : "border border-ivory/15 text-ivory/70 hover:bg-ivory/5"
                 }`}
               >
@@ -1109,7 +1232,7 @@ export const CustomerDashboard: React.FC = () => {
                 onClick={() => setTransferType("international")}
                 className={`rounded-xl px-5 py-2.5 text-xs font-semibold tracking-wide transition-all ${
                   transferType === "international"
-                    ? "bg-gold text-navy-deep font-bold shadow-lg"
+                    ? "bg-gold text-accent-foreground font-bold shadow-lg"
                     : "border border-ivory/15 text-ivory/70 hover:bg-ivory/5"
                 }`}
               >
@@ -1119,7 +1242,7 @@ export const CustomerDashboard: React.FC = () => {
 
             {/* SECTION A: DOMESTIC TRANSFERS */}
             {transferType === "domestic" && (
-              <div className="rounded-3xl border border-ivory/15 bg-gradient-to-b from-[#0C1B30]/90 to-[#071426]/90 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
+              <div className="rounded-3xl border border-ivory/15 bg-gradient-to-b from-navy/90 to-navy-deep/90 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
                 <div className="border-b border-ivory/10 pb-4 mb-6">
                   <h3 className="text-2xl font-display font-bold text-ivory">Domestic Account Clearance</h3>
                   <p className="text-xs text-ivory/60 mt-1">
@@ -1212,7 +1335,7 @@ export const CustomerDashboard: React.FC = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
                     >
                       Authorize Domestic Wire
                     </button>
@@ -1223,7 +1346,7 @@ export const CustomerDashboard: React.FC = () => {
 
             {/* SECTION B: INTERNATIONAL WIRE TRANSFERS */}
             {transferType === "international" && (
-              <div className="rounded-3xl border border-ivory/15 bg-gradient-to-b from-[#0C1B30]/90 to-[#071426]/90 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
+              <div className="rounded-3xl border border-ivory/15 bg-gradient-to-b from-navy/90 to-navy-deep/90 p-6 sm:p-10 shadow-2xl backdrop-blur-xl">
                 <div className="border-b border-ivory/10 pb-4 mb-6">
                   <h3 className="text-2xl font-display font-bold text-ivory">International SWIFT / Cross-Border Wire</h3>
                   <p className="text-xs text-ivory/60 mt-1">
@@ -1378,7 +1501,7 @@ export const CustomerDashboard: React.FC = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft transition-all shadow-lg flex items-center justify-center gap-2"
                     >
                       Authorize International Wire
                     </button>
@@ -1470,7 +1593,7 @@ export const CustomerDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setBeneficiaryModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-semibold text-navy-deep hover:bg-gold-soft transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-semibold text-accent-foreground hover:bg-gold-soft transition-all"
               >
                 <Plus className="h-4 w-4" /> Add Beneficiary
               </button>
@@ -1556,130 +1679,198 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 6: PROFILE AND ACCOUNT SETTINGS (ULTRA GLASSLIKE) */}
+        {/* TAB 6: PROFILE AND ACCOUNT SETTINGS */}
         {activeTab === "settings" && (
-          <div className="relative rounded-3xl border border-white/20 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-white/[0.06] p-6 sm:p-10 shadow-2xl backdrop-blur-2xl space-y-8 animate-in fade-in duration-200 overflow-hidden">
-            {/* Ambient Background Glow */}
+          <div className="relative animate-in fade-in space-y-6 overflow-hidden rounded-3xl border border-ivory/15 bg-gradient-to-br from-ivory/[0.06] via-ivory/[0.02] to-ivory/[0.04] p-5 shadow-2xl backdrop-blur-2xl duration-200 sm:p-8">
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
-            <div className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
 
-            <div className="relative z-10 border-b border-white/10 pb-5">
-              <span className="text-[10px] font-mono tracking-widest text-gold uppercase">Institutional Credentials</span>
-              <h3 className="text-3xl font-display font-bold text-ivory mt-1">Profile & Identification Settings</h3>
-              <p className="text-xs text-ivory/60 mt-0.5">Glassmorphic security dashboard for personal data and verified account credentials</p>
+            <div className="relative z-10 border-b border-ivory/10 pb-5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-gold">Your personal space</span>
+              <h3 className="mt-1 font-display text-3xl font-bold text-ivory">Profile & Settings</h3>
+              <p className="mt-1 text-xs text-ivory/60">Manage your identity, contact details, address, and dashboard appearance.</p>
             </div>
 
-            {/* Profile Avatar Management Card */}
-            <div className="relative z-10 rounded-2xl border border-white/15 bg-white/[0.04] p-6 shadow-xl backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+            {/* Appearance */}
+            <section aria-labelledby="appearance-heading" className="relative z-10 rounded-2xl border border-ivory/15 bg-ivory/[0.04] p-5 shadow-xl backdrop-blur-xl sm:p-6">
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-gold/10 text-gold">
+                    <Palette className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 id="appearance-heading" className="font-display text-lg font-bold text-ivory">Dashboard appearance</h4>
+                    <p className="mt-1 text-xs text-ivory/60">Choose a crisp white interface or the signature black banking theme.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-ivory/10 bg-navy-deep/50 p-1.5" role="group" aria-label="Dashboard color theme">
+                  <button
+                    type="button"
+                    aria-pressed={portalTheme === "light"}
+                    onClick={() => choosePortalTheme("light")}
+                    className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${portalTheme === "light" ? "bg-gold text-accent-foreground shadow-md" : "text-ivory/65 hover:bg-ivory/10 hover:text-ivory"}`}
+                  >
+                    <Sun className="h-4 w-4" /> White
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={portalTheme === "dark"}
+                    onClick={() => choosePortalTheme("dark")}
+                    className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${portalTheme === "dark" ? "bg-gold text-accent-foreground shadow-md" : "text-ivory/65 hover:bg-ivory/10 hover:text-ivory"}`}
+                  >
+                    <Moon className="h-4 w-4" /> Black
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Profile photo and account identity */}
+            <section aria-labelledby="identity-heading" className="relative z-10 flex flex-col justify-between gap-6 rounded-2xl border border-ivory/15 bg-ivory/[0.04] p-5 shadow-xl backdrop-blur-xl sm:p-6 md:flex-row md:items-center">
               <div className="flex items-center gap-5">
-                <div className="relative group">
+                <div className="group relative shrink-0">
                   {customer.avatarUrl ? (
-                    <img
-                      src={customer.avatarUrl}
-                      alt={customer.fullName}
-                      className="h-20 w-20 rounded-full object-cover border-2 border-gold shadow-xl"
-                    />
+                    <img src={customer.avatarUrl} alt={customer.fullName} className="h-20 w-20 rounded-full border-2 border-gold object-cover shadow-xl" />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold/40 bg-gold/15 text-2xl font-bold font-display text-gold shadow-xl">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold/40 bg-gold/15 font-display text-2xl font-bold text-gold shadow-xl">
                       {customer.fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    title="Change Profile Picture"
-                    className="absolute inset-0 rounded-full bg-navy-deep/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-gold transition-opacity cursor-pointer"
+                    title="Change profile picture"
+                    aria-label="Change profile picture"
+                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-navy-deep/60 text-gold opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   >
                     <Camera className="h-6 w-6" />
                   </button>
                 </div>
                 <div>
-                  <h4 className="font-display font-bold text-lg text-ivory">{customer.fullName}</h4>
-                  <p className="text-xs text-gold font-mono">{customer.accountNumber}</p>
-                  <p className="text-[11px] text-ivory/50 mt-1">Supported formats: JPEG, PNG, WebP (Max 5MB)</p>
+                  <h4 id="identity-heading" className="font-display text-lg font-bold text-ivory">{customer.fullName}</h4>
+                  <p className="mt-1 font-mono text-xs text-gold">{customer.customerId} · {customer.accountType}</p>
+                  <p className="mt-1 text-[11px] text-ivory/50">JPEG, PNG or WebP, up to 5MB</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25 transition-all shadow-md flex items-center gap-2"
-                >
+              <div className="flex flex-wrap items-center gap-3">
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold shadow-md transition-all hover:bg-gold/25">
                   <Upload className="h-3.5 w-3.5" /> Upload Photo
                 </button>
                 {customer.avatarUrl && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-all"
-                  >
-                    Remove
+                  <button type="button" onClick={handleRemoveAvatar} className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20">Remove</button>
+                )}
+              </div>
+            </section>
+
+            {/* Editable personal details */}
+            <form onSubmit={(event) => void handleSaveProfile(event)} className="relative z-10 rounded-2xl border border-ivory/15 bg-ivory/[0.04] p-5 shadow-xl backdrop-blur-xl sm:p-6">
+              <div className="flex flex-col justify-between gap-3 border-b border-ivory/10 pb-4 sm:flex-row sm:items-center">
+                <div>
+                  <h4 className="font-display text-lg font-bold text-ivory">Personal details</h4>
+                  <p className="mt-1 text-xs text-ivory/60">These details stay inside your profile, away from the main account dashboard.</p>
+                </div>
+                {!profileEditing && (
+                  <button type="button" onClick={() => setProfileEditing(true)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gold/40 bg-gold/15 px-4 py-2 text-xs font-semibold text-gold hover:bg-gold/25">
+                    <Pencil className="h-3.5 w-3.5" /> Edit Details
                   </button>
                 )}
               </div>
-            </div>
 
-            <div className="relative z-10 grid gap-5 sm:grid-cols-2 text-xs">
-              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
-                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Legal Full Name</span>
-                <p className="font-display font-bold text-lg text-ivory mt-1">{customer.fullName}</p>
-                <span className="text-[10px] text-ivory/40">Verified via Primary Identity KYC</span>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                {([
+                  ["fullName", "Full name", "text", "name"],
+                  ["phone", "Mobile number", "tel", "tel"],
+                ] as const).map(([field, label, type, autoComplete]) => (
+                  <label key={field} className="block text-xs font-medium text-ivory/75">
+                    {label}
+                    <input
+                      type={type}
+                      autoComplete={autoComplete}
+                      disabled={!profileEditing}
+                      value={profileForm[field]}
+                      aria-invalid={Boolean(profileErrors[field])}
+                      onChange={(event) => setProfileForm({ ...profileForm, [field]: event.target.value })}
+                      className="mt-2 min-h-11 w-full rounded-xl border border-ivory/15 bg-navy-deep/60 px-3.5 py-2.5 text-sm text-ivory outline-none transition-colors placeholder:text-ivory/35 focus:border-gold disabled:cursor-default disabled:opacity-75"
+                    />
+                    {profileErrors[field] && <span role="alert" className="mt-1.5 block text-xs text-red-400">{profileErrors[field]}</span>}
+                  </label>
+                ))}
               </div>
 
-              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
-                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Registered Email</span>
-                <p className="font-mono text-sm text-ivory mt-1">{customer.email}</p>
-                <span className="text-[10px] text-emerald-400 flex items-center gap-1 mt-1">
-                  <CheckCircle2 className="h-3 w-3" /> Two-Factor Enabled
-                </span>
+              <label className="mt-5 block text-xs font-medium text-ivory/75">
+                Sign-in email
+                <input type="email" value={customer.email || ""} readOnly aria-readonly="true" className="mt-2 min-h-11 w-full rounded-xl border border-ivory/10 bg-navy-deep/40 px-3.5 py-2.5 font-mono text-sm text-ivory/60 outline-none" />
+                <span className="mt-1.5 block text-[11px] font-normal text-ivory/45">Your sign-in email is kept unchanged to protect account access and password recovery.</span>
+              </label>
+
+              <div className="mt-5 border-t border-ivory/10 pt-5">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-gold">Residential address</p>
+                <label className="block text-xs font-medium text-ivory/75">
+                  Street address
+                  <input
+                    type="text"
+                    autoComplete="street-address"
+                    disabled={!profileEditing}
+                    value={profileForm.street}
+                    aria-invalid={Boolean(profileErrors.street)}
+                    onChange={(event) => setProfileForm({ ...profileForm, street: event.target.value })}
+                    className="mt-2 min-h-11 w-full rounded-xl border border-ivory/15 bg-navy-deep/60 px-3.5 py-2.5 text-sm text-ivory outline-none transition-colors focus:border-gold disabled:cursor-default disabled:opacity-75"
+                  />
+                  {profileErrors.street && <span role="alert" className="mt-1.5 block text-xs text-red-400">{profileErrors.street}</span>}
+                </label>
+                <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                  {([
+                    ["city", "City", "address-level2"],
+                    ["country", "Country", "country-name"],
+                  ] as const).map(([field, label, autoComplete]) => (
+                    <label key={field} className="block text-xs font-medium text-ivory/75">
+                      {label}
+                      <input
+                        type="text"
+                        autoComplete={autoComplete}
+                        disabled={!profileEditing}
+                        value={profileForm[field]}
+                        aria-invalid={Boolean(profileErrors[field])}
+                        onChange={(event) => setProfileForm({ ...profileForm, [field]: event.target.value })}
+                        className="mt-2 min-h-11 w-full rounded-xl border border-ivory/15 bg-navy-deep/60 px-3.5 py-2.5 text-sm text-ivory outline-none transition-colors focus:border-gold disabled:cursor-default disabled:opacity-75"
+                      />
+                      {profileErrors[field] && <span role="alert" className="mt-1.5 block text-xs text-red-400">{profileErrors[field]}</span>}
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
-                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Registered Mobile</span>
-                <p className="font-mono text-sm text-ivory mt-1">{customer.phone}</p>
-                <span className="text-[10px] text-ivory/40">Encrypted SMS Gateway Active</span>
-              </div>
-
-              <div className="group rounded-2xl border border-white/15 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl hover:border-gold/50 transition-all">
-                <span className="text-[10px] text-gold/80 font-mono uppercase tracking-wider">Primary Residence</span>
-                <p className="font-medium text-xs text-ivory mt-1">{customer.address.street}, {customer.address.city}, {customer.address.country}</p>
-                <span className="text-[10px] text-ivory/40">Jurisdiction: {customer.address.country}</span>
-              </div>
-            </div>
+              {profileEditing && (
+                <div className="mt-6 flex flex-col-reverse gap-3 border-t border-ivory/10 pt-5 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={profileSaving}
+                    onClick={() => {
+                      setProfileForm(getProfileDetails(customer));
+                      setProfileErrors({});
+                      setProfileEditing(false);
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-ivory/20 px-5 py-2.5 text-xs font-semibold text-ivory/75 hover:bg-ivory/10 disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" /> Cancel
+                  </button>
+                  <button type="submit" disabled={profileSaving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-xs font-bold text-accent-foreground shadow-md hover:bg-gold-soft disabled:opacity-50">
+                    <Save className="h-4 w-4" /> {profileSaving ? "Saving…" : "Save Changes"}
+                  </button>
+                </div>
+              )}
+            </form>
 
             {/* Dedicated Client Support Desk Card */}
-            <div className="relative z-10 rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-white/[0.04] to-gold/5 p-6 shadow-xl backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="relative z-10 flex flex-col justify-between gap-4 rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-ivory/[0.04] to-gold/5 p-6 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/40 bg-gold/15 text-gold shrink-0">
-                  <Mail className="h-6 w-6" />
-                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold/40 bg-gold/15 text-gold"><Mail className="h-6 w-6" /></div>
                 <div>
-                  <h4 className="font-display font-bold text-base text-ivory">24/7 Dedicated Client Support Desk</h4>
-                  <p className="text-xs text-ivory/70 mt-0.5">
-                    For wire pre-approvals, compliance inquiries, or emergency account locks:
-                  </p>
-                  <a
-                    href="mailto:contactsupport@pinnaclejtrustbank.online"
-                    className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-gold hover:text-gold-light transition-colors mt-1"
-                  >
-                    contactsupport@pinnaclejtrustbank.online
-                  </a>
+                  <h4 className="font-display text-base font-bold text-ivory">Dedicated Client Support</h4>
+                  <p className="mt-0.5 text-xs text-ivory/70">For profile verification, compliance inquiries, or account support:</p>
+                  <a href="mailto:contactsupport@pinnaclejtrustbank.online" className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-gold transition-colors hover:text-gold-soft">contactsupport@pinnaclejtrustbank.online</a>
                 </div>
               </div>
-              <a
-                href="mailto:contactsupport@pinnaclejtrustbank.online"
-                className="rounded-xl border border-gold/40 bg-gold/15 px-4 py-2.5 text-xs font-bold text-gold hover:bg-gold/25 transition-all shadow-md shrink-0 flex items-center gap-2"
-              >
-                <Mail className="h-3.5 w-3.5" /> Email Support Desk
-              </a>
+              <a href="mailto:contactsupport@pinnaclejtrustbank.online" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gold/40 bg-gold/15 px-4 py-2.5 text-xs font-bold text-gold shadow-md transition-all hover:bg-gold/25"><Mail className="h-3.5 w-3.5" /> Email Support</a>
             </div>
           </div>
         )}
@@ -1721,7 +1912,7 @@ export const CustomerDashboard: React.FC = () => {
               {!hasCustomPin && <p className="text-xs font-mono text-gold">Initial browser PIN: 123456</p>}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setBeneficiaryModalOpen(false)} className="rounded-xl border border-ivory/20 px-4 py-2.5">Cancel</button>
-                <button type="submit" className="rounded-xl bg-gold px-5 py-2.5 font-bold text-navy-deep">Verify & Save Beneficiary</button>
+                <button type="submit" className="rounded-xl bg-gold px-5 py-2.5 font-bold text-accent-foreground">Verify & Save Beneficiary</button>
               </div>
             </form>
           </div>
@@ -1747,7 +1938,7 @@ export const CustomerDashboard: React.FC = () => {
               {!hasCustomPin && <p className="text-xs font-mono text-gold">Initial current PIN: 123456</p>}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setPinChangeOpen(false)} className="rounded-xl border border-ivory/20 px-4 py-2.5">Cancel</button>
-                <button type="submit" disabled={isChangingPin} className="rounded-xl bg-gold px-5 py-2.5 font-bold text-navy-deep disabled:opacity-50">{isChangingPin ? "Updating..." : "Update PIN"}</button>
+                <button type="submit" disabled={isChangingPin} className="rounded-xl bg-gold px-5 py-2.5 font-bold text-accent-foreground disabled:opacity-50">{isChangingPin ? "Updating..." : "Update PIN"}</button>
               </div>
             </form>
           </div>
@@ -1757,7 +1948,7 @@ export const CustomerDashboard: React.FC = () => {
       {/* PRE-AUTHORIZATION TRANSFER CONFIRMATION & DETAILS PREVIEW MODAL */}
       {previewModalOpen && pendingTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-navy to-navy-deep p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between border-b border-ivory/10 pb-4">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-gold">
@@ -1853,7 +2044,7 @@ export const CustomerDashboard: React.FC = () => {
                   setPinInput("");
                   setPinModalOpen(true);
                 }}
-                className="w-full sm:flex-1 rounded-xl bg-gold py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full sm:flex-1 rounded-xl bg-gold py-3 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft transition-all shadow-md flex items-center justify-center gap-2"
               >
                 <Lock className="h-4 w-4" /> Authorize with PIN
               </button>
@@ -1865,7 +2056,7 @@ export const CustomerDashboard: React.FC = () => {
       {/* PIN AUTHORIZATION MODAL */}
       {pinModalOpen && pendingTransfer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
-          <div className="relative w-full max-w-md rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 shadow-2xl text-ivory space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-md rounded-3xl border border-gold/40 bg-gradient-to-b from-navy to-navy-deep p-6 shadow-2xl text-ivory space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/40 bg-gold/15 text-gold">
                 <Lock className="h-7 w-7" />
@@ -1905,7 +2096,7 @@ export const CustomerDashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={pinInput.length !== 6 || isAuthorizing}
-                  className="flex-1 rounded-xl bg-gold py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft disabled:opacity-40"
+                  className="flex-1 rounded-xl bg-gold py-2.5 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft disabled:opacity-40"
                 >
                   {isAuthorizing ? "Verifying..." : "Confirm & Transfer"}
                 </button>
@@ -1918,7 +2109,7 @@ export const CustomerDashboard: React.FC = () => {
       {/* MODERN CREATIVE TRANSFER RECEIPT MODAL WITH THUMBS UP */}
       {receiptData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-navy to-navy-deep p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
             {/* Prominent Glowing Thumbs Up Creative Header */}
             <div className="text-center space-y-3 pt-2">
               <div className="mx-auto relative flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-emerald-400 bg-emerald-500/15 text-emerald-400 shadow-2xl shadow-emerald-500/20">
@@ -2020,7 +2211,7 @@ export const CustomerDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setReceiptData(null)}
-                className="w-full sm:w-auto rounded-xl bg-gold px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md"
+                className="w-full sm:w-auto rounded-xl bg-gold px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-accent-foreground hover:bg-gold-soft transition-all shadow-md"
               >
                 Done
               </button>

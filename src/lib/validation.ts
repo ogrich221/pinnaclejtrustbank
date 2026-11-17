@@ -5,6 +5,16 @@ export const loginSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(128),
 });
 
+export const profileDetailsSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter your full name").max(160),
+  phone: z.string().trim().regex(/^\+?[0-9\s().-]{7,24}$/, "Enter a valid phone number"),
+  street: z.string().trim().min(5, "Enter your residential address").max(200),
+  city: z.string().trim().min(2, "Enter your city").max(100),
+  country: z.string().trim().min(2, "Enter your country").max(80),
+});
+
+export type ProfileDetails = z.infer<typeof profileDetailsSchema>;
+
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(100),
   email: z.string().trim().email("Please enter a valid email").max(255),
@@ -35,7 +45,7 @@ export const stepSchemas = [
   }),
 ] as const;
 
-type Keys = "username" | "password" | "name" | "email" | "subject" | "message" | "accountType" | "firstName" | "lastName" | "dob" | "phone" | "address" | "country" | "idType" | "idNumber" | "idExpiry" | "consent";
+type Keys = "username" | "password" | "name" | "fullName" | "email" | "subject" | "message" | "accountType" | "firstName" | "lastName" | "dob" | "phone" | "address" | "street" | "city" | "country" | "idType" | "idNumber" | "idExpiry" | "consent";
 export type FieldErrors = Partial<Record<Keys, string>>;
 export function toErrors(err: z.ZodError): FieldErrors {
   const out: Record<string, string> = {};

@@ -1,5 +1,7 @@
 # Admin and customer portal verification
 
+- [x] Reorganize the customer dashboard and add editable personal details plus a persisted light/dark theme switch in Profile & Settings.
+
 - [x] Add secure customer password recovery with emailed reset links and a public reset-password page.
 - [ ] Verify actual reset-email delivery and link opening with a real test inbox.
 - [x] Require administrator username/email and password before admin pages or approval data are accessible.
