@@ -742,34 +742,61 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
+    const nextCustomerId = details.customerId?.trim() || target.customerId;
+    const nextAccountNumber = details.accountNumber?.trim() || target.accountNumber;
     const updated = customers.map((c) => {
-      if (c.id === target.id || c.customerId === target.customerId) {
-        const newInitials = details.fullName
-          ? details.fullName.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase()
-          : c.initials;
+      if (c.id !== target.id) return c;
 
-        let newMasked = c.maskedAccountNumber;
-        if (details.accountNumber) {
-          const clean = details.accountNumber.trim();
-          newMasked = clean.length > 4 ? `PJTB-••••-${clean.slice(-4)}` : clean;
-        }
+      const newInitials = details.fullName
+        ? details.fullName.trim().split(/\s+/).map((n) => n.charAt(0)).slice(0, 2).join("").toUpperCase()
+        : c.initials;
+      const newMasked = nextAccountNumber.length > 4
+        ? `PJTB-••••-${nextAccountNumber.slice(-4)}`
+        : nextAccountNumber;
+      const verificationStatus = details.verificationStatus ||
+        (details.documents ? calculateVerificationStatus(details.documents) : c.verificationStatus);
 
-        const mergedAddress = details.address ? { ...c.address, ...details.address } : c.address;
-
-        return {
-          ...c,
-          ...details,
-          initials: details.initials || newInitials,
-          maskedAccountNumber: details.maskedAccountNumber || newMasked,
-          address: mergedAddress,
-        };
-      }
-      return c;
+      return {
+        ...c,
+        ...details,
+        customerId: nextCustomerId,
+        accountNumber: nextAccountNumber,
+        initials: details.initials || newInitials,
+        maskedAccountNumber: details.maskedAccountNumber || newMasked,
+        verificationStatus,
+        address: details.address ? { ...c.address, ...details.address } : c.address,
+      };
     });
 
+    const updatedTransactions = transactions.map((transaction) =>
+      transaction.customerId === target.customerId
+        ? {
+            ...transaction,
+            customerId: nextCustomerId,
+            customerName: details.fullName || target.fullName,
+            beneficiaryAccount:
+              transaction.beneficiaryAccount === target.accountNumber ? nextAccountNumber : transaction.beneficiaryAccount,
+          }
+        : transaction
+    );
+
     setCustomers(updated);
+    setTransactions(updatedTransactions);
     try {
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updatedTransactions));
+
+      const oldPortalKeys = [`pjtb_portal_tx_${target.customerId}`, `pjtb_portal_tx_${target.id}`];
+      const oldPortalTx = oldPortalKeys.map((key) => localStorage.getItem(key)).find(Boolean);
+      if (oldPortalTx) {
+        localStorage.setItem(`pjtb_portal_tx_${nextCustomerId}`, oldPortalTx);
+        localStorage.setItem(`pjtb_portal_tx_${target.id}`, oldPortalTx);
+      }
+      if (nextCustomerId !== target.customerId) {
+        localStorage.removeItem(`pjtb_portal_tx_${target.customerId}`);
+        localStorage.removeItem(`pjtb_portal_beneficiaries_${target.customerId}`);
+      }
+
       const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
       if (currentPortal) {
         const portalObj = JSON.parse(currentPortal);
@@ -778,14 +805,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           portalObj.customerId === target.customerId ||
           (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
         ) {
-          const updatedPortal = {
+          const updatedCustomer = updated.find((customer) => customer.id === target.id);
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify({
             ...portalObj,
-            ...details,
-            initials: details.initials || (details.fullName ? details.fullName.trim().split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase() : portalObj.initials),
-            maskedAccountNumber: details.maskedAccountNumber || (details.accountNumber ? (details.accountNumber.length > 4 ? `PJTB-••••-${details.accountNumber.slice(-4)}` : details.accountNumber) : portalObj.maskedAccountNumber),
-            address: details.address ? { ...portalObj.address, ...details.address } : portalObj.address,
-          };
-          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updatedPortal));
+            ...(updatedCustomer || details),
+          }));
         }
       }
       window.dispatchEvent(new Event("storage"));
@@ -794,14 +818,14 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     logAuditEntry(
       "EDIT_CUSTOMER_PROFILE",
-      target.customerId,
+      nextCustomerId,
       `Customer: ${details.fullName || target.fullName}`,
       "Administrator updated customer profile details",
       JSON.stringify(Object.keys(details))
     );
 
     toast.success("Customer details updated successfully", {
-      description: `All modifications applied to ${details.fullName || target.fullName} (${target.customerId}).`,
+      description: `All modifications applied to ${details.fullName || target.fullName} (${nextCustomerId}).`,
     });
   };
 
@@ -809,10 +833,16 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
-    const updated = customers.filter((c) => c.id !== target.id && c.customerId !== target.customerId);
+    const updated = customers.filter((c) => c.id !== target.id);
+    const updatedTransactions = transactions.filter((transaction) => transaction.customerId !== target.customerId);
     setCustomers(updated);
+    setTransactions(updatedTransactions);
     try {
+      const deletedIds = Array.from(new Set([...readDeletedCustomerIds(), target.id, target.customerId]));
+      localStorage.setItem(STORAGE_KEYS.DELETED_CUSTOMERS, JSON.stringify(deletedIds));
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updatedTransactions));
+
       const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
       if (currentPortal) {
         const portalObj = JSON.parse(currentPortal);
@@ -826,6 +856,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       localStorage.removeItem(`pjtb_portal_tx_${target.customerId}`);
       localStorage.removeItem(`pjtb_portal_tx_${target.id}`);
+      localStorage.removeItem(`pjtb_portal_beneficiaries_${target.customerId}`);
+      localStorage.removeItem(`pjtb_portal_beneficiaries_${target.id}`);
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("pjtb_sync"));
     } catch {}
@@ -953,10 +985,15 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const amt = Math.abs(params.amount);
     const isCredit = params.type === "Credit";
-    const delta = isCredit ? amt : -amt;
+    const adjustedBalances = getAdjustedBalances(target.balance || 0, target.availableBalance || 0, params.type, amt);
+    if (!adjustedBalances) {
+      toast.error(isCredit ? "Enter a valid credit amount" : "Debit exceeds the available balance", {
+        description: `No ledger entry was created for ${target.fullName}.`,
+      });
+      return;
+    }
 
-    const newBalance = Math.max(0, (target.balance || 0) + delta);
-    const newAvail = Math.max(0, (target.availableBalance || 0) + delta);
+    const { balance: newBalance, availableBalance: newAvail } = adjustedBalances;
     const timestampStr = `${params.date} ${params.time}`;
 
     const updatedCustomers = customers.map((c) => {
@@ -1040,12 +1077,15 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ],
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
+    const updatedTransactions = [newTx, ...transactions];
+    setTransactions(updatedTransactions);
 
     try {
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updatedTransactions));
       const userTxKey = `pjtb_portal_tx_${target.customerId}`;
       const existingPortalTx = localStorage.getItem(userTxKey) || localStorage.getItem(`pjtb_portal_tx_${target.id}`);
-      const portalTxList = existingPortalTx ? JSON.parse(existingPortalTx) : [];
+      const parsedPortalTx = existingPortalTx ? JSON.parse(existingPortalTx) : [];
+      const portalTxList = Array.isArray(parsedPortalTx) ? parsedPortalTx : [];
       portalTxList.unshift({
         id: newTx.id,
         reference: newTx.reference,
@@ -1095,22 +1135,51 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!target) return;
 
     const updatedTimestamp = params.date && params.time ? `${params.date} ${params.time}` : (params.date || target.timestamp);
-
-    setTransactions((prev) =>
-      prev.map((t) => {
-        if (t.id === params.transactionId) {
-          return {
-            ...t,
+    const updatedPurpose = params.purpose || params.narration || target.purpose;
+    const updatedStatus = params.status || target.status;
+    const updatedCounterparty = params.originatingBank || params.counterparty || target.originatingBank;
+    const updatedTransactions = transactions.map((transaction) =>
+      transaction.id === params.transactionId
+        ? {
+            ...transaction,
             timestamp: updatedTimestamp,
-            purpose: params.purpose || params.narration || t.purpose,
-            status: params.status || t.status,
-            originatingBank: params.originatingBank || params.counterparty || t.originatingBank,
-            type: params.category || t.type,
-          };
-        }
-        return t;
-      })
+            purpose: updatedPurpose,
+            status: updatedStatus,
+            originatingBank: updatedCounterparty,
+            type: params.category || transaction.type,
+          }
+        : transaction
     );
+
+    setTransactions(updatedTransactions);
+    try {
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updatedTransactions));
+      const customer = customers.find((record) => record.customerId === target.customerId);
+      const portalKeys = [`pjtb_portal_tx_${target.customerId}`];
+      if (customer) portalKeys.push(`pjtb_portal_tx_${customer.id}`);
+
+      portalKeys.forEach((key) => {
+        const stored = localStorage.getItem(key);
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) return;
+        const updatedPortalTx = parsed.map((transaction: any) =>
+          transaction.id === target.id
+            ? {
+                ...transaction,
+                date: updatedTimestamp,
+                description: updatedPurpose,
+                status: mapAdminTransactionStatus(updatedStatus),
+                counterparty: updatedCounterparty,
+              }
+            : transaction
+        );
+        localStorage.setItem(key, JSON.stringify(updatedPortalTx));
+      });
+
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
 
     logAuditEntry(
       "EDIT_TRANSACTION",
@@ -1127,17 +1196,19 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const resetToDefaults = () => {
-    setCustomers(INITIAL_CUSTOMERS);
+    const defaultCustomers = INITIAL_CUSTOMERS.map(normalizeCustomerRecord).filter((c): c is CustomerRecord => Boolean(c));
+    setCustomers(defaultCustomers);
     setTransactions(INITIAL_TRANSACTIONS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setNotifications(INITIAL_NOTIFICATIONS);
     try {
-      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(INITIAL_CUSTOMERS));
+      localStorage.removeItem(STORAGE_KEYS.DELETED_CUSTOMERS);
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(defaultCustomers));
       localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(INITIAL_AUDIT_LOGS));
       localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_NOTIFICATIONS));
-      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(INITIAL_CUSTOMERS[0]));
-      localStorage.setItem(`pjtb_portal_tx_${INITIAL_CUSTOMERS[0].customerId}`, JSON.stringify([]));
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(defaultCustomers[0] || null));
+      localStorage.setItem(`pjtb_portal_tx_${INITIAL_CUSTOMERS[0]?.customerId || "PJ-89201"}`, JSON.stringify([]));
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("pjtb_sync"));
     } catch {
