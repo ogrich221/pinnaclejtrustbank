@@ -29,3 +29,4 @@ use the editor.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
 - Site chrome (header/footer/info-page shell) lives in src/components/site; form rules live in src/lib/validation.ts so they can be unit-tested.
+- Shared applications and authorization use Lovable Cloud; localStorage is only a browser cache or legacy preview fallback so submissions synchronize and roles remain server-verified.

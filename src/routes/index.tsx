@@ -1,4 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, HeartHandshake, Cpu, User, Briefcase, PiggyBank, Globe2, Smartphone, ArrowRight,
   KeyRound, Fingerprint, BellRing, Activity, EyeOff, Headset, ArrowUpRight, ArrowDownLeft, LogIn,
@@ -53,6 +55,12 @@ const tx = [
 ];
 
 function Index() {
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+  }, []);
+
   return (
     <div className="bg-background">
       {/* HERO */}
@@ -72,7 +80,7 @@ function Index() {
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link to="/open-account" className="btn-gold">Open an Account <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/login" className="btn-outline-light"><LogIn className="h-4 w-4" /> Login</Link>
+              <Link to={signedIn ? "/portal" : "/login"} className="btn-outline-light"><LogIn className="h-4 w-4" /> {signedIn ? "My Account" : "Login"}</Link>
               <a href="#services" className="inline-flex min-h-12 items-center px-2 text-xs font-semibold tracking-[0.16em] text-ivory/80 underline-offset-8 transition-colors hover:text-gold hover:underline">EXPLORE OUR SERVICES</a>
             </div>
           </div>

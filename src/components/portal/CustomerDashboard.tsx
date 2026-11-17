@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   CreditCard,
   ArrowUpRight,
@@ -129,6 +131,8 @@ interface PortalTransaction {
 }
 
 export const CustomerDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   // Active Customer data
   const [customer, setCustomer] = useState<any>(() => {
     const defaultCustomer = {
@@ -787,6 +791,14 @@ export const CustomerDashboard: React.FC = () => {
     });
   };
 
+  const handleSignOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    localStorage.removeItem("pjtb_current_portal_customer");
+    await supabase.auth.signOut();
+    await navigate({ to: "/login", replace: true });
+  };
+
   if (!customer) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-navy-deep px-6 text-ivory">
@@ -844,12 +856,13 @@ export const CustomerDashboard: React.FC = () => {
                 <p className="font-semibold text-ivory text-xs">{customer.fullName}</p>
                 <p className="text-[10px] text-ivory/60 font-mono">ID: {customer.customerId}</p>
               </div>
-              <Link
-                to="/login"
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
                 className="rounded-xl border border-ivory/15 px-3 py-1.5 text-xs text-ivory/70 hover:bg-ivory/10 hover:text-ivory"
               >
                 Sign Out
-              </Link>
+              </button>
             </div>
           </div>
         </div>

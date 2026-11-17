@@ -16,11 +16,13 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BusinessBankingRouteImport } from './routes/business-banking'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DigitalBankingRouteImport } from './routes/digital-banking'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OpenAccountRouteImport } from './routes/open-account'
 import { Route as PersonalBankingRouteImport } from './routes/personal-banking'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -59,6 +61,11 @@ const DigitalBankingRoute = DigitalBankingRouteImport.update({
   path: '/digital-banking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -84,6 +91,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -107,11 +119,13 @@ export interface FileRoutesByFullPath {
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -123,11 +137,13 @@ export interface FileRoutesByTo {
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -141,11 +157,13 @@ export interface FileRoutesById {
   '/business-banking': typeof BusinessBankingRoute
   '/contact': typeof ContactRoute
   '/digital-banking': typeof DigitalBankingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/open-account': typeof OpenAccountRoute
   '/personal-banking': typeof PersonalBankingRoute
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -159,11 +177,13 @@ export interface FileRouteTypes {
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
+    | '/forgot-password'
     | '/login'
     | '/open-account'
     | '/personal-banking'
     | '/portal'
     | '/privacy'
+    | '/reset-password'
     | '/security'
     | '/terms'
     | '/admin'
@@ -175,11 +195,13 @@ export interface FileRouteTypes {
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
+    | '/forgot-password'
     | '/login'
     | '/open-account'
     | '/personal-banking'
     | '/portal'
     | '/privacy'
+    | '/reset-password'
     | '/security'
     | '/terms'
     | '/admin'
@@ -192,11 +214,13 @@ export interface FileRouteTypes {
     | '/business-banking'
     | '/contact'
     | '/digital-banking'
+    | '/forgot-password'
     | '/login'
     | '/open-account'
     | '/personal-banking'
     | '/portal'
     | '/privacy'
+    | '/reset-password'
     | '/security'
     | '/terms'
     | '/_authenticated/admin'
@@ -210,11 +234,13 @@ export interface RootRouteChildren {
   BusinessBankingRoute: typeof BusinessBankingRoute
   ContactRoute: typeof ContactRoute
   DigitalBankingRoute: typeof DigitalBankingRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OpenAccountRoute: typeof OpenAccountRoute
   PersonalBankingRoute: typeof PersonalBankingRoute
   PortalRoute: typeof PortalRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
 }
@@ -270,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DigitalBankingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -303,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/security': {
@@ -348,11 +388,13 @@ const rootRouteChildren: RootRouteChildren = {
   BusinessBankingRoute: BusinessBankingRoute,
   ContactRoute: ContactRoute,
   DigitalBankingRoute: DigitalBankingRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OpenAccountRoute: OpenAccountRoute,
   PersonalBankingRoute: PersonalBankingRoute,
   PortalRoute: PortalRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
 }

@@ -1,7 +1,9 @@
 # Admin and customer portal verification
 
-- [ ] Require administrator username/email and password before admin pages or approval data are accessible.
-- [ ] Reproduce and fix new homepage applications not appearing in the admin approval queue.
+- [x] Add secure customer password recovery with emailed reset links and a public reset-password page.
+- [ ] Verify actual reset-email delivery and link opening with a real test inbox.
+- [x] Require administrator username/email and password before admin pages or approval data are accessible.
+- [x] Reproduce and fix new homepage applications not appearing in the admin approval queue.
 - [x] Add prominent homepage login access and verify valid, invalid, and newly registered customer sign-ins.
 - [ ] Inventory and exercise every admin navigation item, filter, modal, and action.
 - [ ] Verify admin changes reach the matching customer portal: profile, status, verification, balances, transactions, limits, and deletion.

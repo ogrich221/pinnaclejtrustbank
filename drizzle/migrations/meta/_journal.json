@@ -8,6 +8,13 @@
       "when": 1794953087712,
       "tag": "0000_create_shared_account_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794953419818,
+      "tag": "0001_allow_customer_application_recovery",
+      "breakpoints": true
     }
   ]
 }

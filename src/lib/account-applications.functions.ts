@@ -27,7 +27,7 @@ export const submitAccountApplication = createServerFn({ method: "POST" })
       customer_key: customer.id,
       customer_id: customer.customerId,
       full_name: customer.fullName,
-      email: customer.email,
+      email: customer.email.trim().toLowerCase(),
       application_data: asJson({ ...customer, applicationReference: reference }),
       status: "Pending",
     }, { onConflict: "customer_key", ignoreDuplicates: true });
@@ -72,6 +72,29 @@ export const listAccountApplications = createServerFn({ method: "POST" })
       accountStatus: row.status === "Approved" ? "Active" : "Pending",
       verificationStatus: row.status === "Approved" ? "Verified" : "Pending",
     }));
+  });
+
+export const getCurrentCustomerApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const email = typeof context.claims.email === "string" ? context.claims.email.toLowerCase() : "";
+    if (!email) return null;
+    const { data, error } = await context.supabase
+      .from("account_applications")
+      .select("reference, customer_key, application_data, status")
+      .eq("email", email)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error("Your customer profile could not be loaded");
+    if (!data) return null;
+    return {
+      ...requireObject(data.application_data),
+      id: data.customer_key,
+      applicationReference: data.reference,
+      accountStatus: data.status === "Approved" ? "Active" : "Pending",
+      verificationStatus: data.status === "Approved" ? "Verified" : "Pending",
+    };
   });
 
 export const approveSharedApplication = createServerFn({ method: "POST" })

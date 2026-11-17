@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, X, ChevronLeft, ChevronRight, LogIn } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "./Logo";
 import { LanguageSelector } from "./LanguageSelector";
 
@@ -14,6 +15,15 @@ const nav = [
 
 export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+  }, []);
+
+  const loginTarget = signedIn ? "/portal" : "/login";
+  const loginLabel = signedIn ? "My Account" : "Login";
+
   return (
     <header className={`${overlay ? "absolute" : "relative bg-navy-deep"} inset-x-0 top-0 z-30`}>
       {/* Top Utility Bar with Language Selection at Top Left */}
@@ -87,16 +97,16 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             ))}
           </nav>
           <div className="hidden items-center gap-5 lg:flex">
-            <Link to="/login" className="text-xs font-semibold tracking-[0.2em] text-ivory hover:text-gold">
-              LOGIN
+            <Link to={loginTarget} className="text-xs font-semibold tracking-[0.2em] text-ivory hover:text-gold">
+              {loginLabel.toUpperCase()}
             </Link>
             <Link to="/open-account" className="btn-gold !py-3 !px-5">
               Open an Account
             </Link>
           </div>
           <div className="flex items-center gap-2 lg:hidden">
-            <Link to="/login" className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-gold/35 px-3 text-xs font-semibold text-gold transition-colors hover:bg-gold/10">
-              <LogIn className="h-4 w-4" /> Login
+            <Link to={loginTarget} className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-gold/35 px-3 text-xs font-semibold text-gold transition-colors hover:bg-gold/10">
+              <LogIn className="h-4 w-4" /> {loginLabel}
             </Link>
             <button
               className="text-ivory min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-ivory/15 bg-white/[0.04] p-2 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer"
@@ -128,8 +138,8 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             </Link>
           ))}
           <div className="mt-6 flex gap-3">
-            <Link to="/login" className="btn-outline-light flex-1">
-              Login
+            <Link to={loginTarget} className="btn-outline-light flex-1">
+              {loginLabel}
             </Link>
             <Link to="/open-account" className="btn-gold flex-1">
               Open Account

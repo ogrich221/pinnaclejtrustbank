@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, ShieldCheck, AlertCircle, Lock } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import hero from "@/assets/hq-hero.jpg";
 import { Logo } from "@/components/site/Logo";
 import { Field } from "@/components/site/Field";
@@ -12,6 +13,8 @@ import {
   readCustomerCredentials,
   verifyCustomerPassword,
 } from "@/lib/customer-access";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentCustomerApplication } from "@/lib/account-applications.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -30,11 +33,19 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
+  const fetchCurrentApplication = useServerFn(getCurrentCustomerApplication);
   const [v, setV] = useState({ username: "", password: "" });
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const openPortal = async (customer: unknown) => {
+    localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(customer));
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    await navigate({ to: "/portal" });
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -52,20 +63,31 @@ function Login() {
       const parsed = stored ? JSON.parse(stored) : null;
       const customers = Array.isArray(parsed) ? parsed : INITIAL_CUSTOMERS;
       const credentials = readCustomerCredentials();
-      const customer = findCustomerForLogin(customers, v.username, credentials);
-      const valid = customer ? await verifyCustomerPassword(customer, v.password, credentials) : false;
+      const localCustomer = findCustomerForLogin(customers, v.username, credentials);
 
-      if (!customer || !valid) {
-        setNotice("The username or password is incorrect. Check your details and try again.");
+      if (v.username.includes("@")) {
+        const { error: cloudError } = await supabase.auth.signInWithPassword({
+          email: v.username.trim(),
+          password: v.password,
+        });
+        if (!cloudError) {
+          const sharedCustomer = await fetchCurrentApplication();
+          if (sharedCustomer) {
+            await openPortal(sharedCustomer);
+            return;
+          }
+          await supabase.auth.signOut();
+        }
+      }
+
+      if (localCustomer && await verifyCustomerPassword(localCustomer, v.password, credentials)) {
+        await openPortal(localCustomer);
         return;
       }
 
-      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(customer));
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(new CustomEvent("pjtb_sync"));
-      await navigate({ to: "/portal" });
+      setNotice("The email, username or password is incorrect. Check your details and try again.");
     } catch {
-      setNotice("We couldn't complete sign-in in this browser. Please try again.");
+      setNotice("We couldn't complete sign-in. Please try again or reset your password.");
     } finally {
       setBusy(false);
     }
@@ -99,7 +121,7 @@ function Login() {
               </div>
             )}
             <form onSubmit={submit} noValidate className="mt-8 space-y-6">
-              <Field id="username" label="Username, email or customer ID" error={errors.username}>
+              <Field id="username" label="Email or preview username" error={errors.username}>
                 <input id="username" autoComplete="username" className="field" value={v.username} onChange={(e) => setV({ ...v, username: e.target.value })} aria-invalid={!!errors.username} />
               </Field>
               <Field id="password" label="Password" error={errors.password}>
@@ -110,7 +132,10 @@ function Login() {
                   </button>
                 </div>
               </Field>
-              <button type="submit" disabled={busy} className="btn-navy w-full">{busy ? "Verifying…" : "Sign In"}</button>
+              <div className="flex items-center justify-between gap-4">
+                <Link to="/forgot-password" className="text-sm font-semibold text-navy underline-offset-4 hover:underline">Forgot password?</Link>
+                <button type="submit" disabled={busy} className="btn-navy flex-1">{busy ? "Verifying…" : "Sign In"}</button>
+              </div>
             </form>
 
             <div className="mt-6 rounded-xl border border-gold/25 bg-gold/5 p-4 text-xs">

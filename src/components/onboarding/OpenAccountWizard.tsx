@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { saveCustomerCredentials } from "@/lib/customer-access";
 import { submitAccountApplication } from "@/lib/account-applications.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface OnboardingData {
   // Step 1: Personal Information
@@ -167,6 +167,7 @@ export const OpenAccountWizard: React.FC = () => {
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [applicationRef, setApplicationRef] = useState<string | null>(null);
   const [submissionDate, setSubmissionDate] = useState<string>("");
+  const [accountNeedsConfirmation, setAccountNeedsConfirmation] = useState(false);
 
   const updateField = (field: keyof OnboardingData, val: any) => {
     setForm((prev) => ({ ...prev, [field]: val }));
@@ -378,11 +379,24 @@ export const OpenAccountWizard: React.FC = () => {
 
       list = [newCustomer, ...list.filter((c: any) => c.id !== newCustomer.id && c.customerId !== newCustomer.customerId && (!c.email || c.email.toLowerCase() !== newCustomer.email.toLowerCase()))];
       await submitSharedApplication({ data: { reference: ref, customer: newCustomer } });
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: { username: form.username.trim(), full_name: newCustomer.fullName },
+        },
+      });
+      if (authError) throw authError;
+      setAccountNeedsConfirmation(!authData.session);
       localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
-      await saveCustomerCredentials(newCustomer, form.username, form.password);
 
-      // Also persist the customer for the online banking portal session and pending registration backup
-      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
+      // Keep a local backup for recovery, but only open the portal after email confirmation.
+      if (authData.session) {
+        localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
+      } else {
+        localStorage.removeItem("pjtb_current_portal_customer");
+      }
       localStorage.setItem("pjtb_pending_registration", JSON.stringify(newCustomer));
       
       // Initialize zero transaction history for the new user profile
@@ -1395,6 +1409,7 @@ export const OpenAccountWizard: React.FC = () => {
             </h2>
             <p className="mt-3 text-sm sm:text-base text-ivory/75 max-w-xl mx-auto leading-relaxed">
               Your application has been received successfully. Our team will review your information and notify you of the next steps.
+              {accountNeedsConfirmation && " Check your email to confirm your online banking access before signing in."}
             </p>
 
             {/* Application Receipt Details */}
@@ -1422,10 +1437,10 @@ export const OpenAccountWizard: React.FC = () => {
             {/* Action Buttons */}
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <Link
-                to="/portal"
+                to={accountNeedsConfirmation ? "/login" : "/portal"}
                 className="rounded-xl bg-gold px-6 py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-lg flex items-center gap-2"
               >
-                Access Customer Online Banking <ArrowRight className="h-4 w-4" />
+                {accountNeedsConfirmation ? "Continue to Sign In" : "Access Customer Online Banking"} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/"
