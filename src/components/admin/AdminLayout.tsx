@@ -262,13 +262,13 @@ export const AdminLayout: React.FC = () => {
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
         {/* TOP TRANSPARENT GLASS NAVIGATION BAR */}
-        <header className="sticky top-0 z-20 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 border-b border-ivory/10 bg-[#071426]/85 backdrop-blur-xl px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-4">
           {/* Left: Simple Back & Front Navigation Arrows + Title & Breadcrumbs */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden rounded-xl border border-ivory/15 p-2 text-ivory hover:bg-ivory/10"
+              className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-ivory/15 p-2 text-ivory hover:bg-ivory/10 active:bg-ivory/20 transition-colors"
               aria-label="Toggle navigation sidebar"
             >
               <Menu className="h-5 w-5" />

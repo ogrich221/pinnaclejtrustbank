@@ -211,6 +211,14 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     try {
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    } catch {
+      // ignore
+    }
+  }, [transactions]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
     } catch {
       // ignore
@@ -224,6 +232,28 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // ignore
     }
   }, [notifications]);
+
+  // Reactive cross-tab and cross-view synchronization listener
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const storedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+        if (storedCustomers) setCustomers(JSON.parse(storedCustomers));
+        const storedTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+        if (storedTx) setTransactions(JSON.parse(storedTx));
+        const storedNotifs = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+        if (storedNotifs) setNotifications(JSON.parse(storedNotifs));
+        const storedLogs = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+        if (storedLogs) setAuditLogs(JSON.parse(storedLogs));
+      } catch {}
+    };
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("pjtb_sync", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("pjtb_sync", handleSync);
+    };
+  }, []);
 
   // Helper to log immutable audit entry
   const logAuditEntry = (
@@ -256,32 +286,49 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     reason: string,
     note?: string
   ) => {
-    const target = customers.find((c) => c.id === customerId);
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
-    setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id === customerId) {
-          const updatedNotes = [...c.notes];
-          if (note) {
-            updatedNotes.unshift({
-              id: `note-${Date.now()}`,
-              authorName: activeAdmin.name,
-              authorRole: activeAdmin.role,
-              timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-              content: `STATUS CHANGE (${c.accountStatus} -> ${newStatus}): ${note}`,
-              category: "Compliance",
-            });
-          }
-          return {
-            ...c,
-            accountStatus: newStatus,
-            notes: updatedNotes,
-          };
+    const updatedCustomers = customers.map((c) => {
+      if (c.id === target.id || c.customerId === target.customerId) {
+        const updatedNotes = [...(c.notes || [])];
+        if (note) {
+          updatedNotes.unshift({
+            id: `note-${Date.now()}`,
+            authorName: activeAdmin.name,
+            authorRole: activeAdmin.role,
+            timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+            content: `STATUS CHANGE (${c.accountStatus} -> ${newStatus}): ${note}`,
+            category: "Compliance",
+          });
         }
-        return c;
-      })
-    );
+        return {
+          ...c,
+          accountStatus: newStatus,
+          notes: updatedNotes,
+        };
+      }
+      return c;
+    });
+
+    setCustomers(updatedCustomers);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
+          portalObj.accountStatus = newStatus;
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
+        }
+      }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
 
     let auditAction: AuditLogEntry["action"] = "FLAG_ACCOUNT";
     let severity: AuditLogEntry["severity"] = "Warning";
@@ -329,30 +376,48 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     newStatus: "Approved" | "Rejected",
     reason: string
   ) => {
-    const target = customers.find((c) => c.id === customerId);
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
-    setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id === customerId) {
-          const updatedDocs = c.documents.map((d) => (d.id === docId ? { ...d, status: newStatus } : d));
-          const allApproved = updatedDocs.every((d) => d.status === "Approved");
-          const anyRejected = updatedDocs.some((d) => d.status === "Rejected");
-          const overallVerification: VerificationStatus = anyRejected
-            ? "Rejected"
-            : allApproved
-            ? "Verified"
-            : "Pending";
+    let updatedVerification: VerificationStatus = "Pending";
 
-          return {
-            ...c,
-            documents: updatedDocs,
-            verificationStatus: overallVerification,
-          };
+    const updatedCustomers = customers.map((c) => {
+      if (c.id === target.id || c.customerId === target.customerId) {
+        const updatedDocs = (c.documents || []).map((d) => (d.id === docId ? { ...d, status: newStatus } : d));
+        const allApproved = updatedDocs.every((d) => d.status === "Approved");
+        const anyRejected = updatedDocs.some((d) => d.status === "Rejected");
+        updatedVerification = anyRejected ? "Rejected" : allApproved ? "Verified" : "Pending";
+
+        return {
+          ...c,
+          documents: updatedDocs,
+          verificationStatus: updatedVerification,
+        };
+      }
+      return c;
+    });
+
+    setCustomers(updatedCustomers);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
+          portalObj.verificationStatus = updatedVerification;
+          portalObj.documents = (portalObj.documents || []).map((d: any) =>
+            d.id === docId ? { ...d, status: newStatus } : d
+          );
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
         }
-        return c;
-      })
-    );
+      }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
 
     logAuditEntry(
       newStatus === "Approved" ? "APPROVE_VERIFICATION" : "REJECT_VERIFICATION",
@@ -399,10 +464,28 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const editCustomerDetails = (customerId: string, details: Partial<CustomerRecord>) => {
-    const target = customers.find((c) => c.id === customerId);
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
-    setCustomers((prev) => prev.map((c) => (c.id === customerId ? { ...c, ...details } : c)));
+    const updated = customers.map((c) => (c.id === target.id || c.customerId === target.customerId ? { ...c, ...details } : c));
+    setCustomers(updated);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portalObj = JSON.parse(currentPortal);
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
+          const updatedPortal = { ...portalObj, ...details };
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updatedPortal));
+        }
+      }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
 
     logAuditEntry(
       "EDIT_CUSTOMER_PROFILE",
@@ -427,51 +510,58 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const approveCustomerAccount = (customerId: string, reason?: string) => {
-    const target = customers.find((c) => c.id === customerId);
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
     const approvalReason = reason || "Administrator approved account application and activated banking services.";
 
-    setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id === customerId) {
-          const approvedDocs = c.documents.map((d) => ({ ...d, status: "Approved" as const }));
-          return {
-            ...c,
-            accountStatus: "Active",
-            verificationStatus: "Verified",
-            documents: approvedDocs,
-            balance: 0.0,
-            availableBalance: 0.0,
-            notes: [
-              {
-                id: `note-${Date.now()}`,
-                authorName: "Administrator",
-                authorRole: "Sole Bank Administrator",
-                timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-                content: approvalReason,
-                category: "Compliance",
-              },
-              ...c.notes,
-            ],
-          };
-        }
-        return c;
-      })
-    );
+    const updatedList = customers.map((c) => {
+      if (c.id === target.id || c.customerId === target.customerId) {
+        const approvedDocs = (c.documents || []).map((d) => ({ ...d, status: "Approved" as const }));
+        return {
+          ...c,
+          accountStatus: "Active" as const,
+          verificationStatus: "Verified" as const,
+          documents: approvedDocs,
+          balance: c.balance ?? 0.0,
+          availableBalance: c.availableBalance ?? 0.0,
+          notes: [
+            {
+              id: `note-${Date.now()}`,
+              authorName: "Administrator",
+              authorRole: "Sole Bank Administrator",
+              timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+              content: approvalReason,
+              category: "Compliance" as const,
+            },
+            ...(c.notes || []),
+          ],
+        };
+      }
+      return c;
+    });
 
+    setCustomers(updatedList);
     try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedList));
       const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
       if (currentPortal) {
         const portalObj = JSON.parse(currentPortal);
-        if (portalObj.id === customerId || portalObj.customerId === target.customerId || portalObj.email === target.email) {
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
           portalObj.accountStatus = "Active";
           portalObj.verificationStatus = "Verified";
-          portalObj.balance = 0.0;
-          portalObj.availableBalance = 0.0;
+          portalObj.balance = portalObj.balance ?? 0.0;
+          portalObj.availableBalance = portalObj.availableBalance ?? 0.0;
+          portalObj.documents = (portalObj.documents || []).map((d: any) => ({ ...d, status: "Approved" }));
           localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
         }
       }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
     } catch {}
 
     logAuditEntry(
@@ -486,7 +576,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const newNotif: SystemNotification = {
       id: `notif-${Date.now()}`,
       title: `Account Approved: ${target.fullName}`,
-      message: `Account ${target.customerId} has been approved and activated with opening balance 0.00.`,
+      message: `Account ${target.customerId} has been approved and activated. Status is now Active / Verified.`,
       timestamp: "Just now",
       isRead: false,
       severity: "Info",
@@ -496,13 +586,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setNotifications((prev) => [newNotif, ...prev]);
 
     toast.success(`Account approved and activated for ${target.fullName}`, {
-      description: `Customer ID ${target.customerId} is now Active. Opening balance: 0.00.`,
+      description: `Customer ID ${target.customerId} is now Active.`,
     });
   };
 
 
   const creditDebitCustomer = (params: CreditDebitParams) => {
-    const target = customers.find((c) => c.id === params.customerId);
+    const target = customers.find((c) => c.id === params.customerId || c.customerId === params.customerId);
     if (!target) return;
 
     const amt = Math.abs(params.amount);
@@ -513,35 +603,39 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const newAvail = Math.max(0, (target.availableBalance || 0) + delta);
     const timestampStr = `${params.date} ${params.time}`;
 
-    setCustomers((prev) =>
-      prev.map((c) => {
-        if (c.id === params.customerId) {
-          return {
-            ...c,
-            balance: newBalance,
-            availableBalance: newAvail,
-            notes: [
-              {
-                id: `note-${Date.now()}`,
-                authorName: "Administrator",
-                authorRole: "Sole Bank Administrator",
-                timestamp: timestampStr,
-                content: `Manual ${params.type}: ${c.currency} ${amt.toFixed(2)}. Narration: ${params.narration}. Counterparty: ${params.counterparty || "Direct Ledger"}`,
-                category: "Audit",
-              },
-              ...c.notes,
-            ],
-          };
-        }
-        return c;
-      })
-    );
+    const updatedCustomers = customers.map((c) => {
+      if (c.id === target.id || c.customerId === target.customerId) {
+        return {
+          ...c,
+          balance: newBalance,
+          availableBalance: newAvail,
+          notes: [
+            {
+              id: `note-${Date.now()}`,
+              authorName: "Administrator",
+              authorRole: "Sole Bank Administrator",
+              timestamp: timestampStr,
+              content: `Manual ${params.type}: ${c.currency} ${amt.toFixed(2)}. Narration: ${params.narration}. Counterparty: ${params.counterparty || "Direct Ledger"}`,
+              category: "Audit" as const,
+            },
+            ...(c.notes || []),
+          ],
+        };
+      }
+      return c;
+    });
 
+    setCustomers(updatedCustomers);
     try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
       const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
       if (currentPortal) {
         const portalObj = JSON.parse(currentPortal);
-        if (portalObj.id === params.customerId || portalObj.customerId === target.customerId || portalObj.email === target.email) {
+        if (
+          portalObj.id === target.id ||
+          portalObj.customerId === target.customerId ||
+          (portalObj.email && target.email && portalObj.email.toLowerCase() === target.email.toLowerCase())
+        ) {
           portalObj.balance = newBalance;
           portalObj.availableBalance = newAvail;
           localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(portalObj));
@@ -593,8 +687,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTransactions((prev) => [newTx, ...prev]);
 
     try {
-      const userTxKey = `pjtb_portal_tx_${target.id || target.customerId}`;
-      const existingPortalTx = localStorage.getItem(userTxKey);
+      const userTxKey = `pjtb_portal_tx_${target.customerId}`;
+      const existingPortalTx = localStorage.getItem(userTxKey) || localStorage.getItem(`pjtb_portal_tx_${target.id}`);
       const portalTxList = existingPortalTx ? JSON.parse(existingPortalTx) : [];
       portalTxList.unshift({
         id: newTx.id,
@@ -608,12 +702,16 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         counterparty: params.counterparty || (isCredit ? "Pinnacle J Reserve Treasury" : "Direct Settlement"),
       });
       localStorage.setItem(userTxKey, JSON.stringify(portalTxList));
+      localStorage.setItem(`pjtb_portal_tx_${target.id}`, JSON.stringify(portalTxList));
+
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
     } catch {}
 
     logAuditEntry(
       isCredit ? "CREDIT_ACCOUNT" : "DEBIT_ACCOUNT",
       target.customerId,
-      `${params.type} ${target.currency} ${amt.toFixed(2)} â€” ${target.fullName}`,
+      `${params.type} ${target.currency} ${amt.toFixed(2)} — ${target.fullName}`,
       `Narration: ${params.narration} | Date/Time: ${timestampStr} | New Balance: ${target.currency} ${newBalance.toFixed(2)}`,
       undefined,
       "Info"
@@ -627,7 +725,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isRead: false,
       severity: "Info",
       category: "Transaction",
-      actionUrl: newTx.reference,
+      actionUrl: target.customerId,
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
@@ -682,6 +780,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
       localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(INITIAL_AUDIT_LOGS));
       localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(INITIAL_NOTIFICATIONS));
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(INITIAL_CUSTOMERS[0]));
+      localStorage.setItem(`pjtb_portal_tx_${INITIAL_CUSTOMERS[0].customerId}`, JSON.stringify([]));
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
     } catch {
       // ignore
     }

@@ -301,7 +301,7 @@ export const OpenAccountWizard: React.FC = () => {
 
     // Save into Admin Customers Registry as "Pending Review" so the single Administrator can inspect & approve!
     try {
-      const existing = localStorage.getItem("pjtb_admin_customers_v2");
+      const existing = localStorage.getItem("pjtb_admin_customers_v3") || localStorage.getItem("pjtb_admin_customers_v2");
       const list = existing ? JSON.parse(existing) : [];
 
       const newCustomer = {
@@ -364,47 +364,57 @@ export const OpenAccountWizard: React.FC = () => {
       };
 
       list.unshift(newCustomer);
-      localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+      localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
 
       // Also persist the customer for the online banking portal session
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(newCustomer));
+      
+      // Initialize zero transaction history for the new user profile
+      localStorage.setItem(`pjtb_portal_tx_${newCustomer.customerId}`, JSON.stringify([]));
+      localStorage.setItem(`pjtb_portal_tx_${newCustomer.id}`, JSON.stringify([]));
+
       // Add notification to admin queue
       try {
-        const notifKey = "pjtb_admin_notifications_v2";
+        const notifKey = "pjtb_admin_notifications_v3";
         const storedNotifs = localStorage.getItem(notifKey);
         const notifs = storedNotifs ? JSON.parse(storedNotifs) : [];
         notifs.unshift({
           id: `notif-${Date.now()}`,
           title: `New Application: ${newCustomer.fullName}`,
-          message: `${newCustomer.fullName} registered for ${newCustomer.accountType} (${newCustomer.currency}). Opening balance: 0.00. Awaiting administrator approval.`,
+          message: `${newCustomer.fullName} registered for ${newCustomer.accountType} (${newCustomer.currency}). Opening balance: $0.00. Awaiting administrator approval.`,
           timestamp: "Just now",
-          read: false,
+          isRead: false,
           severity: "Info",
-          category: "Customer",
-          actionLink: newCustomer.customerId,
+          category: "Verification",
+          actionUrl: "customers",
         });
         localStorage.setItem(notifKey, JSON.stringify(notifs));
       } catch {}
 
       // Add audit log entry
       try {
-        const auditKey = "pjtb_admin_audit_logs_v2";
+        const auditKey = "pjtb_admin_audit_logs_v3";
         const storedLogs = localStorage.getItem(auditKey);
         const logs = storedLogs ? JSON.parse(storedLogs) : [];
         logs.unshift({
           id: `audit-${Date.now()}`,
           timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
           adminName: "Registration Gateway",
-          adminEmail: "gateway@pinnaclejtrust.com",
+          adminRole: "Administrator",
           action: "NEW_ACCOUNT_APPLICATION",
-          targetType: "Customer",
+          targetDescription: `Customer: ${newCustomer.fullName} (${newCustomer.customerId})`,
           targetId: newCustomer.customerId,
-          details: `Application submitted for ${newCustomer.fullName} (${newCustomer.customerId}). Opening balance: 0.00.`,
           reason: "Online account registration completed by customer",
+          note: `Application submitted for ${newCustomer.fullName}. Opening balance: 0.00.`,
           ipAddress: "Customer Remote IP",
           severity: "Info",
         });
         localStorage.setItem(auditKey, JSON.stringify(logs));
+      } catch {}
+
+      try {
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("pjtb_sync"));
       } catch {}
     } catch {
       // ignore

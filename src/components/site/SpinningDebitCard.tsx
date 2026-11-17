@@ -14,9 +14,9 @@ export const SpinningDebitCard: React.FC = () => {
         {/* Ambient Back Glow */}
         <div className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-r from-gold/25 via-emerald-500/10 to-gold/20 blur-3xl opacity-60 animate-pulse" />
 
-        {/* 3D Spinning Card Container */}
+        {/* 3D Spinning Card Container - Fully Responsive Across All Viewports */}
         <div
-          className={`relative h-[200px] w-[320px] sm:h-[235px] sm:w-[380px] md:h-[250px] md:w-[410px] cursor-pointer transition-transform duration-700 ${
+          className={`relative h-[190px] w-[290px] min-[360px]:h-[210px] min-[360px]:w-[330px] sm:h-[235px] sm:w-[380px] md:h-[250px] md:w-[410px] max-w-[calc(100vw-32px)] cursor-pointer transition-transform duration-700 ${
             isPaused ? "" : "animate-spin-card"
           }`}
           onClick={() => setIsPaused(!isPaused)}

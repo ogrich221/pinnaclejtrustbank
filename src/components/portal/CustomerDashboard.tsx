@@ -112,13 +112,15 @@ export const CustomerDashboard: React.FC = () => {
         const updated = { ...prev, avatarUrl: dataUrl };
         localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
         try {
-          const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+          const adminCusts = localStorage.getItem("pjtb_admin_customers_v3");
           if (adminCusts) {
             const list = JSON.parse(adminCusts);
             const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
             if (idx >= 0) {
               list[idx].avatarUrl = dataUrl;
-              localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+              localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
+              window.dispatchEvent(new Event("storage"));
+              window.dispatchEvent(new CustomEvent("pjtb_sync"));
             }
           }
         } catch {}
@@ -134,13 +136,15 @@ export const CustomerDashboard: React.FC = () => {
       const updated = { ...prev, avatarUrl: url };
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
       try {
-        const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+        const adminCusts = localStorage.getItem("pjtb_admin_customers_v3");
         if (adminCusts) {
           const list = JSON.parse(adminCusts);
           const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
           if (idx >= 0) {
             list[idx].avatarUrl = url;
-            localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+            localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
+            window.dispatchEvent(new Event("storage"));
+            window.dispatchEvent(new CustomEvent("pjtb_sync"));
           }
         }
       } catch {}
@@ -154,13 +158,15 @@ export const CustomerDashboard: React.FC = () => {
       const updated = { ...prev, avatarUrl: undefined };
       localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updated));
       try {
-        const adminCusts = localStorage.getItem("pjtb_admin_customers_v2");
+        const adminCusts = localStorage.getItem("pjtb_admin_customers_v3");
         if (adminCusts) {
           const list = JSON.parse(adminCusts);
           const idx = list.findIndex((c: any) => c.id === prev.id || c.customerId === prev.customerId || c.email === prev.email);
           if (idx >= 0) {
             delete list[idx].avatarUrl;
-            localStorage.setItem("pjtb_admin_customers_v2", JSON.stringify(list));
+            localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(list));
+            window.dispatchEvent(new Event("storage"));
+            window.dispatchEvent(new CustomEvent("pjtb_sync"));
           }
         }
       } catch {}
@@ -169,83 +175,134 @@ export const CustomerDashboard: React.FC = () => {
     toast.info("Profile picture removed");
   };
 
-  // Beneficiaries
-  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([
-    {
-      id: "ben-1",
-      name: "Barclays Private Escrow",
-      bankName: "Barclays Bank UK",
-      accountNumber: "•••• 4410",
-      swiftBic: "BARCGB22",
-      country: "United Kingdom",
-      type: "International",
-    },
-    {
-      id: "ben-2",
-      name: "Solaria Capital Holdings",
-      bankName: "DBS Bank Singapore",
-      accountNumber: "•••• 9921",
-      swiftBic: "DBSSSGSG",
-      country: "Singapore",
-      type: "International",
-    },
-    {
-      id: "ben-3",
-      name: "Metropolitan Custody Services",
-      bankName: "JPMorgan Chase Bank, N.A.",
-      accountNumber: "•••• 3810",
-      country: "United States",
-      type: "Domestic",
-    },
-  ]);
+  // Beneficiaries (blank by default for all new profiles until created)
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>(() => {
+    try {
+      const savedCustomer = localStorage.getItem("pjtb_current_portal_customer");
+      const currentCust = savedCustomer ? JSON.parse(savedCustomer) : null;
+      const targetId = currentCust?.customerId || currentCust?.id || "PJ-89201";
+      const saved = localStorage.getItem(`pjtb_portal_beneficiaries_${targetId}`);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return [];
+  });
 
-  // Transactions list
-  const [transactions, setTransactions] = useState<PortalTransaction[]>([
-    {
-      id: "tx-1",
-      reference: "PJTB-TR-9941",
-      date: "2026-11-16 09:35",
-      description: "Portfolio Custody Allocation",
-      category: "International",
-      amount: 2500000.0,
-      currency: "USD",
-      status: "Completed",
-      counterparty: "Barclays Private Bank London",
-    },
-    {
-      id: "tx-2",
-      date: "2026-11-15 14:10",
-      reference: "PJTB-TR-8812",
-      description: "Treasury Clearing Dividend",
-      category: "Deposit",
-      amount: 145000.0,
-      currency: "USD",
-      status: "Completed",
-      counterparty: "Federal Reserve IMAD",
-    },
-    {
-      id: "tx-3",
-      date: "2026-11-14 11:20",
-      reference: "PJTB-TR-7729",
-      description: "Commercial Real Estate Escrow",
-      category: "Domestic",
-      amount: 450000.0,
-      currency: "USD",
-      status: "Completed",
-      counterparty: "JPMorgan Escrow Services",
-    },
-    {
-      id: "tx-4",
-      date: "2026-11-12 16:45",
-      reference: "PJTB-TR-6610",
-      description: "Advisory & Custody Fee",
-      category: "Withdrawal",
-      amount: 12500.0,
-      currency: "USD",
-      status: "Completed",
-      counterparty: "Pinnacle J Trust Fee Settlement",
-    },
-  ]);
+  // Transactions list (starts at zero for all new & testrun customer profiles)
+  const [transactions, setTransactions] = useState<PortalTransaction[]>(() => {
+    try {
+      const savedCustomer = localStorage.getItem("pjtb_current_portal_customer");
+      const currentCust = savedCustomer ? JSON.parse(savedCustomer) : null;
+      const targetId = currentCust?.customerId || currentCust?.id || "PJ-89201";
+
+      const userTxKey = `pjtb_portal_tx_${targetId}`;
+      const savedUserTx = localStorage.getItem(userTxKey);
+      if (savedUserTx) return JSON.parse(savedUserTx);
+
+      const adminTxStored = localStorage.getItem("pjtb_admin_transactions_v3");
+      if (adminTxStored) {
+        const allAdminTx = JSON.parse(adminTxStored);
+        const customerTx = allAdminTx.filter(
+          (t: any) =>
+            t.customerId === targetId ||
+            (currentCust?.accountNumber && t.beneficiaryAccount === currentCust.accountNumber)
+        );
+        if (customerTx.length > 0) {
+          return customerTx.map((t: any) => ({
+            id: t.id,
+            reference: t.reference,
+            date: t.timestamp,
+            description: t.purpose || t.type,
+            category: t.direction === "Inbound" ? "Deposit" : "Withdrawal",
+            amount: t.amount,
+            currency: t.currency || "USD",
+            status: t.status === "Settled" ? "Completed" : t.status,
+            counterparty: t.originatingBank || t.beneficiaryName || "Direct Settlement",
+          }));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  // Reactive synchronization hook with Administrator registry
+  useEffect(() => {
+    const syncFromStorage = () => {
+      try {
+        const adminCustsStr = localStorage.getItem("pjtb_admin_customers_v3");
+        const currentPortalStr = localStorage.getItem("pjtb_current_portal_customer");
+        const currentLocal = currentPortalStr ? JSON.parse(currentPortalStr) : customer;
+
+        let latestCust = currentLocal;
+        if (adminCustsStr) {
+          const list = JSON.parse(adminCustsStr);
+          const found = list.find(
+            (c: any) =>
+              c.id === currentLocal.id ||
+              c.customerId === currentLocal.customerId ||
+              (c.email && c.email.toLowerCase() === currentLocal.email?.toLowerCase())
+          );
+          if (found) {
+            latestCust = found;
+          }
+        }
+
+        if (latestCust) {
+          setCustomer(latestCust);
+          localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(latestCust));
+
+          // Also reload transactions
+          const targetId = latestCust.customerId || latestCust.id;
+          const userTxKey = `pjtb_portal_tx_${targetId}`;
+          const savedUserTx = localStorage.getItem(userTxKey) || localStorage.getItem(`pjtb_portal_tx_${latestCust.id}`);
+          if (savedUserTx) {
+            setTransactions(JSON.parse(savedUserTx));
+          } else {
+            const adminTxStored = localStorage.getItem("pjtb_admin_transactions_v3");
+            if (adminTxStored) {
+              const allAdminTx = JSON.parse(adminTxStored);
+              const customerTx = allAdminTx.filter(
+                (t: any) =>
+                  t.customerId === targetId ||
+                  (latestCust.accountNumber && t.beneficiaryAccount === latestCust.accountNumber)
+              );
+              setTransactions(
+                customerTx.map((t: any) => ({
+                  id: t.id,
+                  reference: t.reference,
+                  date: t.timestamp,
+                  description: t.purpose || t.type,
+                  category: t.direction === "Inbound" ? "Deposit" : "Withdrawal",
+                  amount: t.amount,
+                  currency: t.currency || "USD",
+                  status: t.status === "Settled" ? "Completed" : t.status,
+                  counterparty: t.originatingBank || t.beneficiaryName || "Direct Settlement",
+                }))
+              );
+            } else {
+              setTransactions([]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Portal sync error:", err);
+      }
+    };
+
+    syncFromStorage();
+    window.addEventListener("storage", syncFromStorage);
+    window.addEventListener("pjtb_sync", syncFromStorage);
+    window.addEventListener("focus", syncFromStorage);
+
+    return () => {
+      window.removeEventListener("storage", syncFromStorage);
+      window.removeEventListener("pjtb_sync", syncFromStorage);
+      window.removeEventListener("focus", syncFromStorage);
+    };
+  }, []);
 
   // Transfer Forms
   const [domesticForm, setDomesticForm] = useState({
@@ -367,6 +424,12 @@ export const CustomerDashboard: React.FC = () => {
     e.preventDefault();
     if (pinInput.length !== 6) return void toast.error("PIN must be exactly 6 digits");
 
+    const amt = pendingTransfer?.amount || 0;
+    const fee = pendingTransfer?.fee || 0;
+    const totalDeduction = amt + fee;
+    const finalBalance = Math.max(0, customer.balance - totalDeduction);
+    const finalAvail = Math.max(0, customer.availableBalance - totalDeduction);
+
     const ref = "PJTB-UETR-" + Math.floor(10000000 + Math.random() * 90000000);
     const dateStr = new Date().toISOString().replace("T", " ").substring(0, 16);
 
@@ -376,23 +439,95 @@ export const CustomerDashboard: React.FC = () => {
       date: dateStr,
       description: pendingTransfer?.type === "Domestic" ? domesticForm.description || "Domestic Transfer" : intlForm.purpose,
       category: pendingTransfer?.type as any,
-      amount: pendingTransfer?.amount || 0,
+      amount: amt,
       currency: pendingTransfer?.currency || "USD",
       status: "Completed",
       counterparty: pendingTransfer?.beneficiary || "Beneficiary",
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
-    setCustomer((prev: any) => ({
-      ...prev,
-      balance: prev.balance - (pendingTransfer?.amount || 0),
-      availableBalance: prev.availableBalance - (pendingTransfer?.amount || 0),
-    }));
+    const updatedTxList = [newTx, ...transactions];
+    setTransactions(updatedTxList);
 
-    const finalBalance = Math.max(0, customer.balance - (pendingTransfer?.amount || 0) - (pendingTransfer?.fee || 0));
+    const updatedCustomer = {
+      ...customer,
+      balance: finalBalance,
+      availableBalance: finalAvail,
+    };
+    setCustomer(updatedCustomer);
+
+    // Persist to local customer portal session
+    try {
+      localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(updatedCustomer));
+      const targetId = customer.customerId || customer.id;
+      localStorage.setItem(`pjtb_portal_tx_${targetId}`, JSON.stringify(updatedTxList));
+      if (customer.id) localStorage.setItem(`pjtb_portal_tx_${customer.id}`, JSON.stringify(updatedTxList));
+    } catch {}
+
+    // Update in Admin Customers registry & Admin Transactions ledger
+    try {
+      const adminCustsStr = localStorage.getItem("pjtb_admin_customers_v3");
+      if (adminCustsStr) {
+        const adminCustList = JSON.parse(adminCustsStr);
+        const idx = adminCustList.findIndex(
+          (c: any) =>
+            c.id === customer.id ||
+            c.customerId === customer.customerId ||
+            (c.email && c.email.toLowerCase() === customer.email?.toLowerCase())
+        );
+        if (idx >= 0) {
+          adminCustList[idx].balance = finalBalance;
+          adminCustList[idx].availableBalance = finalAvail;
+          adminCustList[idx].notes = [
+            {
+              id: `note-${Date.now()}`,
+              authorName: "Online Banking Rails",
+              authorRole: "Customer",
+              timestamp: dateStr,
+              content: `Outbound ${pendingTransfer?.type} Transfer: ${customer.currency} ${amt.toFixed(2)} to ${pendingTransfer?.beneficiary}. New balance: ${customer.currency} ${finalBalance.toFixed(2)}`,
+              category: "Audit",
+            },
+            ...(adminCustList[idx].notes || []),
+          ];
+          localStorage.setItem("pjtb_admin_customers_v3", JSON.stringify(adminCustList));
+        }
+      }
+
+      // Add to Admin Transactions ledger
+      const adminTxStr = localStorage.getItem("pjtb_admin_transactions_v3");
+      const adminTxList = adminTxStr ? JSON.parse(adminTxStr) : [];
+      adminTxList.unshift({
+        id: newTx.id,
+        reference: ref,
+        customerId: customer.customerId,
+        customerName: customer.fullName,
+        type: pendingTransfer?.type === "Domestic" ? "Domestic Wire" : "International Wire",
+        amount: amt,
+        currency: customer.currency,
+        direction: "Outbound",
+        timestamp: dateStr,
+        status: "Settled",
+        riskScore: 3,
+        riskLevel: "Low",
+        originatingBank: "Pinnacle J Trust Bank",
+        beneficiaryName: pendingTransfer?.beneficiary || "Beneficiary",
+        beneficiaryAccount: pendingTransfer?.accountNumber || "N/A",
+        clearingRoute: pendingTransfer?.type === "Domestic" ? "Fedwire Real-Time Gross Settlement" : "SWIFT GPI High-Value Cross-Border Rail",
+        purpose: newTx.description,
+        timeline: [
+          { stage: "Initiated", timestamp: dateStr, status: "Completed", note: "Customer authorized transfer via portal" },
+          { stage: "Authorized", timestamp: dateStr, status: "Completed", note: "Verified with 6-digit Customer PIN" },
+          { stage: "Settled", timestamp: dateStr, status: "Completed", note: `Deducted from account. New balance: ${customer.currency} ${finalBalance.toFixed(2)}` },
+        ],
+      });
+      localStorage.setItem("pjtb_admin_transactions_v3", JSON.stringify(adminTxList));
+
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
+
     setReceiptData({
       ...newTx,
-      fee: pendingTransfer?.fee || 0.0,
+      fee: fee,
       originAccount: customer.maskedAccountNumber,
       clearingTime: "Settled via SWIFT GPI / Fedwire Rails",
       newBalance: finalBalance,
@@ -461,8 +596,8 @@ export const CustomerDashboard: React.FC = () => {
 
       {/* Main Body Layout with Side Navigation */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
-        {/* Navigation Tabs Bar */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-ivory/10 pb-4 mb-8 text-xs">
+        {/* Navigation Tabs Bar - Horizontally Scrollable on Mobile, Wrapped on Desktop */}
+        <div className="flex items-center gap-2 border-b border-ivory/10 pb-4 mb-8 text-xs overflow-x-auto scrollbar-none sm:flex-wrap -mx-4 px-4 sm:mx-0 sm:px-0">
           {[
             { id: "overview", label: "Account Overview", icon: CreditCard },
             { id: "transfers", label: "Transfer Centre", icon: ArrowLeftRight },
@@ -478,7 +613,7 @@ export const CustomerDashboard: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all font-medium ${
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 transition-all font-medium whitespace-nowrap shrink-0 ${
                   isActive
                     ? "border border-gold/40 bg-gold/15 text-gold font-semibold shadow-md shadow-gold/10"
                     : "border border-transparent text-ivory/70 hover:bg-white/[0.04] hover:text-ivory"
@@ -637,36 +772,44 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
               </div>
 
-              <div className="divide-y divide-ivory/10">
-                {transactions.slice(0, 3).map((tx) => (
-                  <div key={tx.id} className="py-3.5 flex items-center justify-between hover:bg-ivory/5 px-2 rounded-lg transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-                          tx.category === "Deposit"
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                            : "border-gold/30 bg-gold/10 text-gold"
-                        }`}
-                      >
-                        {tx.category === "Deposit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+              {transactions.length === 0 ? (
+                <div className="py-8 text-center text-xs text-ivory/50">
+                  <History className="h-8 w-8 mx-auto mb-2 text-ivory/30" />
+                  <p className="font-semibold text-ivory/70">Zero Transaction History</p>
+                  <p className="mt-1">All new and testrun customer profiles start blank ($0.00) until funded or transferred.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-ivory/10">
+                  {transactions.slice(0, 3).map((tx) => (
+                    <div key={tx.id} className="py-3.5 flex items-center justify-between hover:bg-ivory/5 px-2 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
+                            tx.category === "Deposit"
+                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                              : "border-gold/30 bg-gold/10 text-gold"
+                          }`}
+                        >
+                          {tx.category === "Deposit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-ivory">{tx.description}</p>
+                          <p className="text-[10px] text-ivory/50 font-mono">{tx.reference} · {tx.date}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-xs text-ivory">{tx.description}</p>
-                        <p className="text-[10px] text-ivory/50 font-mono">{tx.reference} · {tx.date}</p>
-                      </div>
-                    </div>
 
-                    <div className="text-right">
-                      <p className={`font-mono text-sm font-bold ${tx.category === "Deposit" ? "text-emerald-400" : "text-ivory"}`}>
-                        {tx.category === "Deposit" ? "+" : "-"}{tx.currency} {tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </p>
-                      <span className="text-[10px] font-semibold text-emerald-400 uppercase">
-                        {tx.status}
-                      </span>
+                      <div className="text-right">
+                        <p className={`font-mono text-sm font-bold ${tx.category === "Deposit" ? "text-emerald-400" : "text-ivory"}`}>
+                          {tx.category === "Deposit" ? "+" : "-"}{tx.currency} {tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </p>
+                        <span className="text-[10px] font-semibold text-emerald-400 uppercase">
+                          {tx.status}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -990,44 +1133,54 @@ export const CustomerDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-ivory/10 bg-navy-deep/80 text-[11px] font-semibold uppercase tracking-wider text-ivory/60 font-mono">
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3">Reference</th>
-                    <th scope="col" className="px-3 py-3.5">Date & Time</th>
-                    <th scope="col" className="px-3 py-3.5">Description</th>
-                    <th scope="col" className="px-3 py-3.5">Category</th>
-                    <th scope="col" className="px-3 py-3.5">Amount</th>
-                    <th scope="col" className="py-3.5 pl-3 pr-4 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ivory/5 text-ivory">
-                  {transactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => setReceiptData(tx)}>
-                      <td className="py-3.5 pl-4 pr-3 font-mono font-medium text-gold">{tx.reference}</td>
-                      <td className="px-3 py-3.5 font-mono text-ivory/60">{tx.date}</td>
-                      <td className="px-3 py-3.5 font-semibold text-ivory">{tx.description}</td>
-                      <td className="px-3 py-3.5">
-                        <span className="rounded-lg border border-ivory/10 bg-navy/60 px-2 py-0.5 text-[10px]">
-                          {tx.category}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 font-mono font-bold">
-                        <span className={tx.category === "Deposit" ? "text-emerald-400" : "text-ivory"}>
-                          {tx.category === "Deposit" ? "+" : "-"}{tx.currency} {tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="py-3.5 pl-3 pr-4 text-right">
-                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
-                          {tx.status}
-                        </span>
-                      </td>
+            {transactions.length === 0 ? (
+              <div className="py-14 text-center text-xs text-ivory/50 rounded-2xl border border-ivory/10 bg-navy-deep/60 p-8">
+                <History className="h-10 w-10 mx-auto mb-3 text-ivory/30" />
+                <p className="text-sm font-semibold text-ivory/80">No Transactions Recorded</p>
+                <p className="mt-1 max-w-md mx-auto text-ivory/50">
+                  This account currently has zero transactions. All new customer profiles remain completely blank ($0.00) until initial funds are deposited or transferred.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-ivory/10 bg-navy-deep/80 text-[11px] font-semibold uppercase tracking-wider text-ivory/60 font-mono">
+                    <tr>
+                      <th scope="col" className="py-3.5 pl-4 pr-3">Reference</th>
+                      <th scope="col" className="px-3 py-3.5">Date & Time</th>
+                      <th scope="col" className="px-3 py-3.5">Description</th>
+                      <th scope="col" className="px-3 py-3.5">Category</th>
+                      <th scope="col" className="px-3 py-3.5">Amount</th>
+                      <th scope="col" className="py-3.5 pl-3 pr-4 text-right">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-ivory/5 text-ivory">
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => setReceiptData(tx)}>
+                        <td className="py-3.5 pl-4 pr-3 font-mono font-medium text-gold">{tx.reference}</td>
+                        <td className="px-3 py-3.5 font-mono text-ivory/60">{tx.date}</td>
+                        <td className="px-3 py-3.5 font-semibold text-ivory">{tx.description}</td>
+                        <td className="px-3 py-3.5">
+                          <span className="rounded-lg border border-ivory/10 bg-navy/60 px-2 py-0.5 text-[10px]">
+                            {tx.category}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3.5 font-mono font-bold">
+                          <span className={tx.category === "Deposit" ? "text-emerald-400" : "text-ivory"}>
+                            {tx.category === "Deposit" ? "+" : "-"}{tx.currency} {tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                        <td className="py-3.5 pl-3 pr-4 text-right">
+                          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                            {tx.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1049,33 +1202,48 @@ export const CustomerDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {beneficiaries.map((b) => (
-                <div key={b.id} className="rounded-2xl border border-ivory/10 bg-navy-deep/60 p-5 space-y-2 relative group">
-                  <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-mono text-gold border border-gold/30">
-                    {b.type}
-                  </span>
-                  <h4 className="font-semibold text-ivory text-sm">{b.name}</h4>
-                  <p className="text-xs text-ivory/60">{b.bankName} · {b.country}</p>
-                  <p className="font-mono text-xs text-gold">{b.accountNumber}</p>
-                  {b.swiftBic && <p className="font-mono text-[10px] text-ivory/40">SWIFT: {b.swiftBic}</p>}
+            {beneficiaries.length === 0 ? (
+              <div className="py-14 text-center text-xs text-ivory/50 rounded-2xl border border-ivory/10 bg-navy-deep/60 p-8">
+                <Users className="h-10 w-10 mx-auto mb-3 text-ivory/30" />
+                <p className="text-sm font-semibold text-ivory/80">No Saved Beneficiaries</p>
+                <p className="mt-1 max-w-md mx-auto text-ivory/50">
+                  Your beneficiary directory is blank. Saved recipients will appear here for one-click recurring transfers.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {beneficiaries.map((b) => (
+                  <div key={b.id} className="rounded-2xl border border-ivory/10 bg-navy-deep/60 p-5 space-y-2 relative group">
+                    <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-mono text-gold border border-gold/30">
+                      {b.type}
+                    </span>
+                    <h4 className="font-semibold text-ivory text-sm">{b.name}</h4>
+                    <p className="text-xs text-ivory/60">{b.bankName} · {b.country}</p>
+                    <p className="font-mono text-xs text-gold">{b.accountNumber}</p>
+                    {b.swiftBic && <p className="font-mono text-[10px] text-ivory/40">SWIFT: {b.swiftBic}</p>}
 
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBeneficiaries((prev) => prev.filter((item) => item.id !== b.id));
-                        toast.info("Beneficiary removed from whitelist");
-                      }}
-                      className="text-ivory/40 hover:text-red-400 p-1"
-                      title="Remove beneficiary"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = beneficiaries.filter((item) => item.id !== b.id);
+                          setBeneficiaries(updated);
+                          const targetId = customer.customerId || customer.id;
+                          try {
+                            localStorage.setItem(`pjtb_portal_beneficiaries_${targetId}`, JSON.stringify(updated));
+                          } catch {}
+                          toast.info("Beneficiary removed from whitelist");
+                        }}
+                        className="text-ivory/40 hover:text-red-400 p-1"
+                        title="Remove beneficiary"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1223,10 +1391,118 @@ export const CustomerDashboard: React.FC = () => {
         )}
       </div>
 
+      {/* PRE-AUTHORIZATION TRANSFER CONFIRMATION & DETAILS PREVIEW MODAL */}
+      {previewModalOpen && pendingTransfer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between border-b border-ivory/10 pb-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gold">
+                  Pre-Authorization Review
+                </span>
+                <h3 className="text-xl sm:text-2xl font-display font-bold text-ivory mt-0.5">
+                  Confirm Transfer Details
+                </h3>
+                <p className="text-xs text-ivory/60 mt-0.5">
+                  Verify recipient details and projected balance before entering your security PIN
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewModalOpen(false)}
+                className="rounded-lg p-2 text-ivory/60 hover:bg-ivory/10 hover:text-ivory"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Projected Balance Highlight Card */}
+            <div className="rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/15 via-navy-deep to-gold/10 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-gold font-semibold">
+                  New Balance After Transfer
+                </span>
+                <p className="font-display font-bold text-2xl sm:text-3xl text-gold mt-0.5">
+                  {pendingTransfer.currency} {pendingTransfer.newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="text-right sm:border-l sm:border-gold/20 sm:pl-4 text-xs font-mono text-ivory/60">
+                <p>Current: {customer.currency} {pendingTransfer.currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                <p className="text-red-400 font-semibold">- {pendingTransfer.currency} {(pendingTransfer.amount + pendingTransfer.fee).toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+
+            {/* Detailed Recipient & Bank Information */}
+            <div className="rounded-2xl border border-ivory/10 bg-navy-deep/80 p-4 sm:p-5 space-y-3 text-xs">
+              <div className="flex justify-between border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Transfer Type:</span>
+                <span className="font-semibold text-ivory">{pendingTransfer.type} Transfer</span>
+              </div>
+              <div className="flex justify-between border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Recipient Name:</span>
+                <span className="font-semibold text-gold">{pendingTransfer.beneficiary}</span>
+              </div>
+              <div className="flex justify-between border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Account / IBAN:</span>
+                <span className="font-mono text-ivory">{pendingTransfer.accountNumber}</span>
+              </div>
+              <div className="flex justify-between border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Receiving Bank:</span>
+                <span className="font-semibold text-ivory">{pendingTransfer.bankName}</span>
+              </div>
+              <div className="flex flex-col border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Recipient Bank Address:</span>
+                <span className="text-ivory mt-0.5 font-medium">{pendingTransfer.bankAddress}</span>
+              </div>
+              {pendingTransfer.swiftBic && (
+                <div className="flex justify-between border-b border-ivory/10 pb-2">
+                  <span className="text-ivory/60">SWIFT / BIC Code:</span>
+                  <span className="font-mono text-gold">{pendingTransfer.swiftBic}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-b border-ivory/10 pb-2">
+                <span className="text-ivory/60">Transfer Amount:</span>
+                <span className="font-mono font-bold text-ivory">
+                  {pendingTransfer.currency} {pendingTransfer.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ivory/60">Network Clearance Fee:</span>
+                <span className="font-mono text-emerald-400">
+                  {pendingTransfer.fee > 0 ? `${pendingTransfer.currency} ${pendingTransfer.fee.toFixed(2)}` : "Free / $0.00"}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPreviewModalOpen(false)}
+                className="w-full sm:flex-1 rounded-xl border border-ivory/20 py-3 text-xs font-semibold text-ivory/70 hover:bg-ivory/10 transition-colors"
+              >
+                Modify Details
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewModalOpen(false);
+                  setPinInput("");
+                  setPinModalOpen(true);
+                }}
+                className="w-full sm:flex-1 rounded-xl bg-gold py-3 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <Lock className="h-4 w-4" /> Authorize with PIN
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PIN AUTHORIZATION MODAL */}
       {pinModalOpen && pendingTransfer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 shadow-2xl text-ivory space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
+          <div className="relative w-full max-w-md rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 shadow-2xl text-ivory space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/40 bg-gold/15 text-gold">
                 <Lock className="h-7 w-7" />
@@ -1244,6 +1520,7 @@ export const CustomerDashboard: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  inputMode="numeric"
                   maxLength={6}
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
@@ -1275,68 +1552,112 @@ export const CustomerDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* TRANSFER RECEIPT MODAL */}
+      {/* MODERN CREATIVE TRANSFER RECEIPT MODAL WITH THUMBS UP */}
       {receiptData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-8 shadow-2xl text-ivory space-y-6">
-            <div className="flex items-start justify-between border-b border-ivory/10 pb-4">
-              <div className="flex items-center gap-3">
-                <LogoMark className="h-8 w-8 text-gold" />
-                <div>
-                  <h3 className="font-display font-bold text-lg text-ivory">Transfer Confirmation Receipt</h3>
-                  <p className="text-[10px] font-mono text-gold">PINNACLE J TRUST BANK CLEARING</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-deep/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-gold/40 bg-gradient-to-b from-[#0C1B30] to-[#071426] p-6 sm:p-8 shadow-2xl text-ivory space-y-6 max-h-[90vh] overflow-y-auto">
+            {/* Prominent Glowing Thumbs Up Creative Header */}
+            <div className="text-center space-y-3 pt-2">
+              <div className="mx-auto relative flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-emerald-400 bg-emerald-500/15 text-emerald-400 shadow-2xl shadow-emerald-500/20">
+                <div className="absolute inset-0 rounded-3xl bg-emerald-400/20 animate-ping opacity-40" />
+                <ThumbsUp className="relative h-10 w-10 text-emerald-400 animate-bounce" />
+              </div>
+              <div>
+                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-[11px] font-mono font-semibold text-emerald-400 uppercase">
+                  Transfer Cleared & Settled
+                </span>
+                <h3 className="mt-2 text-2xl sm:text-3xl font-display font-bold text-ivory">
+                  Payment Successful!
+                </h3>
+                <p className="text-xs text-ivory/60 mt-1">
+                  Your transaction has cleared Pinnacle J Trust Bank rails and is logged on the immutable ledger.
+                </p>
+              </div>
+            </div>
+
+            {/* Creative Card: Amount & New Balance */}
+            <div className="rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/15 via-navy-deep to-gold/15 p-5 text-center">
+              <span className="text-[11px] uppercase font-mono tracking-wider text-ivory/60">
+                Amount Cleared
+              </span>
+              <p className="font-display font-bold text-3xl sm:text-4xl text-gold mt-1">
+                {receiptData.currency} {receiptData.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              </p>
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-navy/80 px-4 py-1 text-xs font-mono">
+                <span className="text-ivory/60">New Available Balance:</span>
+                <strong className="text-emerald-400">
+                  {receiptData.currency} {receiptData.newBalance !== undefined ? receiptData.newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 }) : "0.00"}
+                </strong>
+              </div>
+            </div>
+
+            {/* Receipt Summary Breakdown */}
+            <div className="rounded-2xl border border-ivory/10 bg-navy-deep/80 p-5 space-y-3 text-xs">
+              <div className="flex items-center justify-between border-b border-ivory/10 pb-2.5">
+                <span className="text-ivory/60">Transaction Reference:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-gold text-xs sm:text-sm">{receiptData.reference}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(receiptData.reference);
+                      setCopiedRef(true);
+                      toast.success("Reference copied to clipboard");
+                      setTimeout(() => setCopiedRef(false), 2000);
+                    }}
+                    className="rounded p-1 text-ivory/50 hover:bg-ivory/10 hover:text-gold transition-colors"
+                    title="Copy reference"
+                  >
+                    {copiedRef ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setReceiptData(null)}
-                className="rounded-lg p-1 text-ivory/60 hover:bg-ivory/10"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="rounded-2xl border border-ivory/10 bg-navy-deep/80 p-5 space-y-3 text-xs">
-              <div className="flex justify-between border-b border-ivory/10 pb-2">
-                <span className="text-ivory/60">Reference Code:</span>
-                <span className="font-mono font-bold text-gold">{receiptData.reference}</span>
-              </div>
-              <div className="flex justify-between border-b border-ivory/10 pb-2">
-                <span className="text-ivory/60">Amount Cleared:</span>
-                <span className="font-mono font-bold text-ivory">
-                  {receiptData.currency} {receiptData.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
               <div className="flex justify-between border-b border-ivory/10 pb-2">
                 <span className="text-ivory/60">Beneficiary:</span>
-                <span className="font-semibold text-ivory">{receiptData.counterparty}</span>
+                <span className="font-semibold text-ivory text-right">{receiptData.counterparty}</span>
               </div>
+
+              {receiptData.bankName && (
+                <div className="flex justify-between border-b border-ivory/10 pb-2">
+                  <span className="text-ivory/60">Receiving Bank:</span>
+                  <span className="font-semibold text-ivory text-right">{receiptData.bankName}</span>
+                </div>
+              )}
+
+              {receiptData.bankAddress && (
+                <div className="flex flex-col border-b border-ivory/10 pb-2">
+                  <span className="text-ivory/60">Recipient Bank Address:</span>
+                  <span className="text-ivory mt-0.5 leading-relaxed">{receiptData.bankAddress}</span>
+                </div>
+              )}
+
               <div className="flex justify-between border-b border-ivory/10 pb-2">
                 <span className="text-ivory/60">Execution Timestamp:</span>
-                <span className="font-mono text-ivory/80">{receiptData.date}</span>
+                <span className="font-mono text-ivory/80">{receiptData.date} UTC</span>
               </div>
+
               <div className="flex justify-between">
                 <span className="text-ivory/60">Clearance Status:</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Settled & Logged
+                <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" /> Settled & Cryptographically Verified
                 </span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  window.print();
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-ivory/20 px-4 py-2 text-xs text-ivory hover:bg-ivory/10"
+                onClick={() => window.print()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-ivory/20 px-5 py-2.5 text-xs font-semibold text-ivory hover:bg-ivory/10 transition-colors"
               >
-                <Printer className="h-3.5 w-3.5" /> Print Receipt
+                <Printer className="h-4 w-4 text-gold" /> Print Official Receipt
               </button>
               <button
                 type="button"
                 onClick={() => setReceiptData(null)}
-                className="rounded-xl bg-gold px-5 py-2 text-xs font-bold text-navy-deep hover:bg-gold-soft"
+                className="w-full sm:w-auto rounded-xl bg-gold px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-navy-deep hover:bg-gold-soft transition-all shadow-md"
               >
                 Done
               </button>

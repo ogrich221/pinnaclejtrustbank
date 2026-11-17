@@ -18,16 +18,16 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
     <header className={`${overlay ? "absolute" : "relative bg-navy-deep"} inset-x-0 top-0 z-30`}>
       {/* Top Utility Bar with Language Selection at Top Left */}
       <div className="border-b border-ivory/10 bg-navy-deep/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-6 py-2">
           {/* Top-Left: Simple Back & Front Navigation Arrows + Language Selector */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <div className="flex items-center gap-0.5 rounded-full border border-ivory/15 bg-navy-deep/80 px-1 py-0.5 backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => window.history.back()}
                 title="Go Back"
                 aria-label="Go Back"
-                className="rounded-full p-1 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
+                className="rounded-full p-1.5 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -37,7 +37,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
                 onClick={() => window.history.forward()}
                 title="Go Front / Forward"
                 aria-label="Go Front"
-                className="rounded-full p-1 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
+                className="rounded-full p-1.5 text-ivory/70 hover:bg-ivory/10 hover:text-gold transition-colors cursor-pointer"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -50,7 +50,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           </div>
 
           {/* Top-Right: Quick branch & support links */}
-          <div className="flex items-center gap-4 text-xs text-ivory/70">
+          <div className="flex items-center gap-2 sm:gap-4 text-xs text-ivory/70">
             <a
               href="/#global-branches"
               className="hidden md:inline-flex items-center gap-1.5 text-xs text-gold hover:text-gold-soft transition-colors"
@@ -65,14 +65,13 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             <Link to="/contact" className="hover:text-gold transition-colors text-[11px] tracking-wide">
               Support 24/7
             </Link>
-            
           </div>
         </div>
       </div>
 
       {/* Main Navigation Bar */}
       <div className="border-b border-ivory/10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4">
           <Logo />
           <nav className="hidden items-center gap-8 lg:flex" aria-label="Main">
             {nav.map((n) => (
@@ -96,12 +95,12 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             </Link>
           </div>
           <button
-            className="text-ivory lg:hidden"
+            className="text-ivory lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-ivory/15 bg-white/[0.04] p-2 hover:bg-white/10 active:bg-white/15 transition-colors cursor-pointer"
             onClick={() => setOpen(!open)}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
           >
-            {open ? <X /> : <Menu />}
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
