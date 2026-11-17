@@ -525,7 +525,7 @@ export const AdminLayout: React.FC = () => {
                   <p className="text-xs text-ivory/60">Direct secure channel to engineering, compliance, and client relations desk</p>
                   <div className="rounded-xl border border-gold/30 bg-navy/60 p-5 text-xs text-ivory/80 space-y-2">
                     <p><strong className="text-gold">Official Support Desk:</strong> <a href="mailto:contactsupport@pinnaclejtrustbank.online" className="text-gold underline hover:text-gold-light">contactsupport@pinnaclejtrustbank.online</a></p>
-                    <p><strong className="text-gold">Internal Hotline:</strong> +1 (212) 555-0199 / +44 (0)20 7946 0999 (Ext 402)</p>
+                    <p><strong className="text-gold">Internal Hotline:</strong> +1 000 PJTB / +44 (0)20 7946 0999 (Ext 402)</p>
                     <p><strong className="text-gold">Operations Center:</strong> 24/7 Global Clearing & Compliance Monitoring</p>
                   </div>
                 </div>

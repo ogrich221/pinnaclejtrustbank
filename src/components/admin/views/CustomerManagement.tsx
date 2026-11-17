@@ -20,6 +20,7 @@ import {
   PlusCircle,
   MinusCircle,
   Trash2,
+  XCircle,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { CustomerRecord, CustomerAccountStatus, VerificationStatus } from "../types";
@@ -32,7 +33,7 @@ interface CustomerManagementProps {
 }
 
 export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialFilter = "All" }) => {
-  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount, deleteCustomer, refreshAllData } = useAdminData();
+  const { customers, globalSearch, setGlobalSearch, setCurrentView, approveCustomerAccount, rejectCustomerAccount, deleteCustomer, refreshAllData } = useAdminData();
 
   // Search & Filter state
   const [filterTab, setFilterTab] = useState<string>(initialFilter);
@@ -431,14 +432,24 @@ export const CustomerManagement: React.FC<CustomerManagementProps> = ({ initialF
                       <td className="py-4 pl-3 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           {(c.accountStatus === "Pending" || c.verificationStatus === "Pending") && (
-                            <button
-                              type="button"
-                              onClick={() => approveCustomerAccount(c.id)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-sm"
-                              title="Approve Customer Application & Activate Account"
-                            >
-                              <CheckCircle2 className="h-3 w-3" /> Approve
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => approveCustomerAccount(c.id)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-sm"
+                                title="Approve Customer Application & Activate Account"
+                              >
+                                <CheckCircle2 className="h-3 w-3" /> Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => rejectCustomerAccount(c.id)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-400 hover:bg-red-500/20 transition-all shadow-sm"
+                                title="Reject Customer Application"
+                              >
+                                <XCircle className="h-3 w-3" /> Reject
+                              </button>
+                            </>
                           )}
                           <button
                             type="button"

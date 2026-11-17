@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { updateCurrentCustomerProfile } from "@/lib/account-applications.functions";
+import { getCurrentCustomerApplication, updateCurrentCustomerProfile } from "@/lib/account-applications.functions";
 import { profileDetailsSchema, toErrors, type FieldErrors, type ProfileDetails } from "@/lib/validation";
 import {
   CreditCard,
@@ -49,6 +49,7 @@ import {
   Palette,
 } from "lucide-react";
 import { LogoMark } from "@/components/site/Logo";
+import { CustomerDebitCard } from "@/components/portal/CustomerDebitCard";
 import { toast } from "sonner";
 import { getTransferValidationError, mapAdminTransactionStatus } from "@/lib/banking";
 import type { CustomerBeneficiary, SecurityEvent } from "@/components/admin/types";
@@ -152,51 +153,28 @@ interface PortalTransaction {
   counterparty: string;
 }
 
-export const CustomerDashboard: React.FC = () => {
+export const CustomerDashboard: React.FC<{ initialCustomer?: any }> = ({ initialCustomer }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const updateSharedProfile = useServerFn(updateCurrentCustomerProfile);
-  // Active Customer data
+  const fetchCurrentApplication = useServerFn(getCurrentCustomerApplication);
+  // Active Customer data always comes from the authenticated shared application.
   const [customer, setCustomer] = useState<any>(() => {
-    const defaultCustomer = {
-      id: "cust-testrun-1",
-      fullName: "Testrun Customer",
-      customerId: "PJ-89201",
-      accountNumber: "PJTB-8492-3841-09",
-      maskedAccountNumber: "PJTB-••••-3841",
-      accountType: "Premier Checking",
-      currency: "USD",
-      balance: 0.0,
-      availableBalance: 0.0,
-      dailyTransferLimit: 50000,
-      accountStatus: "Pending",
-      verificationStatus: "Pending",
-      email: "testrun@pinnaclejtrust.com",
-      phone: "+1 (212) 555-0199",
-      address: {
-        street: "28 Wall Street, Suite 4400",
-        city: "New York",
-        country: "United States",
-      },
-    };
+    if (initialCustomer) return initialCustomer;
     try {
       const saved = localStorage.getItem("pjtb_current_portal_customer");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed) return parsed;
       }
-      const deletedIds = JSON.parse(localStorage.getItem("pjtb_deleted_customer_ids_v3") || "[]");
-      if (Array.isArray(deletedIds) && (deletedIds.includes(defaultCustomer.id) || deletedIds.includes(defaultCustomer.customerId))) {
-        return null;
-      }
     } catch {
-      // ignore
+      // Ignore unavailable browser storage; the route guard still requires authentication.
     }
-    return defaultCustomer;
+    return null;
   });
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "transfers" | "transactions" | "beneficiaries" | "security" | "settings"
+    "overview" | "card" | "transfers" | "transactions" | "beneficiaries" | "security" | "settings"
   >("overview");
   const [transferType, setTransferType] = useState<"domestic" | "international">("domestic");
   const [showBalance, setShowBalance] = useState(true);
@@ -486,6 +464,51 @@ export const CustomerDashboard: React.FC = () => {
       window.removeEventListener("focus", syncFromStorage);
     };
   }, []);
+
+  // A shared administrator review takes effect without waiting for the next login.
+  useEffect(() => {
+    if (!customer?.id) return;
+    let active = true;
+    const checkSharedAccess = async () => {
+      try {
+        const shared = await fetchCurrentApplication();
+        if (!active) return;
+        if (!shared?.canAccess) {
+          localStorage.removeItem("pjtb_current_portal_customer");
+          await queryClient.cancelQueries();
+          queryClient.clear();
+          await supabase.auth.signOut();
+          await navigate({
+            to: "/login",
+            search: { reason: shared?.approvalStatus ?? "Unavailable" },
+            replace: true,
+          });
+          return;
+        }
+        setCustomer(shared);
+        localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(shared));
+      } catch {
+        // Keep the current session if a transient connection check fails.
+      }
+    };
+
+    const channel = supabase
+      .channel(`portal-access-${customer.id}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "account_applications",
+        filter: `customer_key=eq.${customer.id}`,
+      }, () => { void checkSharedAccess(); })
+      .subscribe();
+    window.addEventListener("focus", checkSharedAccess);
+
+    return () => {
+      active = false;
+      window.removeEventListener("focus", checkSharedAccess);
+      void supabase.removeChannel(channel);
+    };
+  }, [customer?.id, fetchCurrentApplication, navigate, queryClient]);
 
   // Transfer Forms
   const [domesticForm, setDomesticForm] = useState({
@@ -982,6 +1005,7 @@ export const CustomerDashboard: React.FC = () => {
               label: "Banking",
               items: [
                 { id: "overview", label: "Account Overview", icon: CreditCard },
+                { id: "card", label: "Debit Card", icon: CreditCard },
                 { id: "transfers", label: "Transfer Centre", icon: ArrowLeftRight },
                 { id: "beneficiaries", label: `Beneficiaries (${beneficiaries.length})`, icon: Users },
                 { id: "transactions", label: `Transaction History (${transactions.length})`, icon: History },
@@ -1148,6 +1172,13 @@ export const CustomerDashboard: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveTab("card")}
+                  className="flex-1 sm:flex-initial justify-center min-h-[44px] rounded-xl border border-ivory/20 px-4 sm:px-5 py-2.5 text-xs font-medium text-ivory/80 hover:bg-ivory/10 transition-colors flex items-center gap-2"
+                >
+                  <CreditCard className="h-4 w-4 shrink-0" /> Debit Card
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab("beneficiaries")}
                   className="w-full sm:w-auto justify-center min-h-[44px] rounded-xl border border-ivory/20 px-4 sm:px-5 py-2.5 text-xs font-medium text-ivory/80 hover:bg-ivory/10 transition-colors flex items-center gap-2"
                 >
@@ -1212,6 +1243,10 @@ export const CustomerDashboard: React.FC = () => {
         )}
 
         {/* TAB 2: TRANSFER CENTRE */}
+        {activeTab === "card" && (
+          <CustomerDebitCard customerId={customer.customerId} fullName={customer.fullName} accountType={customer.accountType} />
+        )}
+
         {activeTab === "transfers" && (
           <div className="space-y-6 animate-in fade-in duration-200">
             {/* Transfer Sub-Tabs */}

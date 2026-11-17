@@ -27,6 +27,7 @@ import {
   Globe,
   Layers,
   Check,
+  XCircle,
 } from "lucide-react";
 import { CustomerRecord, AdministrativeNote } from "../types";
 import { CreditDebitModal } from "./CreditDebitModal";
@@ -54,6 +55,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
     addCustomerNote,
     editCustomerDetails,
     approveCustomerAccount,
+    rejectCustomerAccount,
     deleteCustomer,
   } = useAdminData();
   const customer = customers.find(
@@ -217,6 +219,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
       case "Restricted":
         return "border-amber-500/30 bg-amber-500/10 text-amber-400";
       case "Suspended":
+      case "Rejected":
         return "border-red-500/30 bg-red-500/10 text-red-400";
       case "Flagged":
         return "border-purple-500/30 bg-purple-500/10 text-purple-400";
@@ -396,16 +399,28 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  approveCustomerAccount(customer.id);
-                  onClose();
-                }}
-                className="rounded-xl border border-gold bg-gold px-4 py-2 text-xs font-bold text-navy-deep hover:bg-gold-light transition-all shadow-md shrink-0 flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account (0.00 Balance)
-              </button>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    approveCustomerAccount(customer.id);
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-gold bg-gold px-4 py-2 text-xs font-bold text-navy-deep shadow-md transition-all hover:bg-gold-light"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Approve & Activate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    rejectCustomerAccount(customer.id);
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20"
+                >
+                  <XCircle className="h-4 w-4" /> Reject Application
+                </button>
+              </div>
             </div>
           )}
 

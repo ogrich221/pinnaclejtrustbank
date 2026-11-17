@@ -1,4 +1,4 @@
-export type CustomerAccountStatus = "Active" | "Pending" | "Restricted" | "Suspended" | "Flagged";
+export type CustomerAccountStatus = "Active" | "Pending" | "Rejected" | "Restricted" | "Suspended" | "Flagged";
 export type VerificationStatus = "Verified" | "Pending" | "Unverified" | "Rejected";
 export type AccountType =
   | "Private Wealth"
@@ -156,6 +156,7 @@ export interface AuditLogEntry {
     | "SYSTEM_CONFIG_CHANGE"
     | "SECURITY_OVERRIDE"
     | "ACCOUNT_APPROVED"
+    | "ACCOUNT_REJECTED"
     | "CREDIT_ACCOUNT"
     | "DEBIT_ACCOUNT"
     | "EDIT_TRANSACTION"

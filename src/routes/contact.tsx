@@ -65,10 +65,10 @@ function Contact() {
             </div>
             <p className="text-[11px] font-mono uppercase tracking-widest text-gold">Private Client Desk</p>
             <a
-              href="tel:+12125550199"
+              href="tel:+10007882"
               className="mt-1.5 block font-semibold text-sm text-ivory hover:text-gold transition-colors"
             >
-              +1 (212) 555-0199
+              +1 000 PJTB
             </a>
             <p className="mt-1 text-xs text-ivory/50">Direct executive telephone hotline</p>
           </div>

@@ -27,6 +27,11 @@ const PRESET_REASONS: Record<CustomerAccountStatus, string[]> = {
     "Application submitted - awaiting administrative document verification",
     "Additional compliance inquiry pending review",
   ],
+  Rejected: [
+    "Identity or supporting documents could not be verified",
+    "Application information was incomplete or inconsistent",
+    "The application did not meet account eligibility requirements",
+  ],
   Active: [
     "Administrator approved new account application and activated services",
     "Compliance Review Successfully Completed & Cleared",

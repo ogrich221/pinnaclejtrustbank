@@ -147,7 +147,7 @@ export const SpinningDebitCard: React.FC = () => {
                   This card is property of PINNACLE J TRUST BANK. Issued under authority of private fiduciary license. If found, please return to any PJ Trust branch or call the global concierge desk.
                 </p>
                 <div className="flex items-center justify-between pt-1 border-t border-ivory/10 text-ivory/50 font-mono">
-                  <span>24/7 Global: +1 (800) 849-2900</span>
+                  <span>24/7 Global: +1 000 PJTB</span>
                   <span className="text-gold font-bold">ZÜRICH · LONDON · NEW YORK</span>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getApplicationReference, sharedCustomerSchema } from "@/lib/account-applications";
+import { getApplicationReference, getCustomerAccessMessage, getCustomerAccessState, sharedCustomerSchema } from "@/lib/account-applications";
 
 const application = {
   id: "cust-application-1",
@@ -26,5 +26,15 @@ describe("shared account applications", () => {
 
   it("rejects an application without the customer ID and email needed for approval", () => {
     expect(sharedCustomerSchema.safeParse({ fullName: "Missing Details" }).success).toBe(false);
+  });
+
+  it("allows dashboard access only after administrator approval", () => {
+    expect(getCustomerAccessState("Approved").canAccess).toBe(true);
+    expect(getCustomerAccessState("Approved").accountStatus).toBe("Active");
+  });
+
+  it.each(["Pending", "Rejected", "Suspended", "Restricted", "Flagged"] as const)("blocks %s accounts with a specific explanation", (status) => {
+    expect(getCustomerAccessState(status).canAccess).toBe(false);
+    expect(getCustomerAccessMessage(status).length).toBeGreaterThan(20);
   });
 });

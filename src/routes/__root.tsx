@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { BankLoadingScreen } from "@/components/site/BankLoadingScreen";
 import { PendingApplicationSync } from "@/components/site/PendingApplicationSync";
+import { TawkLiveChat } from "@/components/site/TawkLiveChat";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -146,6 +147,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <PendingApplicationSync />
+      <TawkLiveChat />
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

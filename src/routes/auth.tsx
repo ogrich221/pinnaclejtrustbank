@@ -35,13 +35,21 @@ function AdministratorAuth() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [checkingCustomerRedirect, setCheckingCustomerRedirect] = useState(true);
   const destination = safeDestination(search.redirect);
+  const customerDestination = destination.startsWith("/portal");
 
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) void navigate({ to: destination, replace: true });
+      if (data.user) {
+        void navigate({ to: destination, replace: true });
+      } else if (customerDestination) {
+        void navigate({ to: "/login", search: { redirect: destination }, replace: true });
+      } else {
+        setCheckingCustomerRedirect(false);
+      }
     });
-  }, [destination, navigate]);
+  }, [customerDestination, destination, navigate]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -76,6 +84,8 @@ function AdministratorAuth() {
 
     await navigate({ to: destination, replace: true });
   };
+
+  if (customerDestination && checkingCustomerRedirect) return null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy-deep px-6 py-16 text-ivory">

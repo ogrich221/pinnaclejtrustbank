@@ -13,6 +13,7 @@ import {
   Lock,
   ExternalLink,
   CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useAdminData } from "../AdminDataContext";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -21,7 +22,7 @@ import { CustomerProfileModal } from "./CustomerProfileModal";
 import { CustomerRecord } from "../types";
 
 export const DashboardOverview: React.FC = () => {
-  const { customers, transactions, auditLogs, setCurrentView, setSelectedCustomerId, approveCustomerAccount } = useAdminData();
+  const { customers, transactions, auditLogs, setCurrentView, setSelectedCustomerId, approveCustomerAccount, rejectCustomerAccount } = useAdminData();
   const [selectedCustomerForModal, setSelectedCustomerForModal] = useState<CustomerRecord | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
@@ -263,6 +264,13 @@ export const DashboardOverview: React.FC = () => {
                       className="rounded-xl border border-emerald-500 bg-emerald-500/20 px-4 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-md flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="h-4 w-4" /> Approve & Activate Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rejectCustomerAccount(pc.id || customerId)}
+                      className="flex items-center gap-1.5 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2 text-xs font-semibold text-red-400 transition-all hover:bg-red-500/20"
+                    >
+                      <XCircle className="h-4 w-4" /> Reject
                     </button>
                     <button
                       type="button"

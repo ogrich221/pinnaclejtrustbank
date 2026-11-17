@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { submitAccountApplication } from "@/lib/account-applications.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { accountPasswordSchema, registrationEmailSchema } from "@/lib/validation";
 
 export interface OnboardingData {
   // Step 1: Personal Information
@@ -190,7 +191,7 @@ export const OpenAccountWizard: React.FC = () => {
     if (!form.city.trim()) errs.city = "City is required";
     if (!form.postalCode.trim()) errs.postalCode = "Postal code is required";
     if (!form.phoneNumber.trim()) errs.phoneNumber = "Phone number is required";
-    if (!form.email.trim() || !form.email.includes("@")) errs.email = "Valid email address is required";
+    if (!registrationEmailSchema.safeParse(form.email).success) errs.email = "Valid email address is required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -209,7 +210,7 @@ export const OpenAccountWizard: React.FC = () => {
     if (!form.username.trim() || form.username.length < 5) {
       errs.username = "Username must be at least 5 alphanumeric characters";
     }
-    if (!form.password || form.password.length < 8) {
+    if (!accountPasswordSchema.safeParse(form.password).success) {
       errs.password = "Password must be at least 8 characters with numbers and symbols";
     }
     if (form.password !== form.confirmPassword) {
@@ -457,8 +458,11 @@ export const OpenAccountWizard: React.FC = () => {
       } catch {}
     } catch (err) {
       console.error("Account registration error:", err);
+      const message = err instanceof Error && err.message.includes("application already exists")
+        ? err.message
+        : "Please check your details and connection, then submit again.";
       toast.error("We couldn't save your application and login credentials", {
-        description: "Please check your browser storage settings and submit again.",
+        description: message,
       });
       return;
     }

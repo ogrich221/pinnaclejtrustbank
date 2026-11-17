@@ -1,9 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, profileDetailsSchema, stepSchemas } from "@/lib/validation";
+import { accountPasswordSchema, customerLoginSchema, loginSchema, profileDetailsSchema, registrationEmailSchema, stepSchemas } from "@/lib/validation";
 
 describe("banking forms", () => {
   it("rejects passwords shorter than 8 characters", () => {
     expect(loginSchema.safeParse({ username: "jdoe", password: "short" }).success).toBe(false);
+  });
+  it("requires a properly formatted registration email", () => {
+    expect(registrationEmailSchema.safeParse("not-an-email").success).toBe(false);
+    expect(registrationEmailSchema.safeParse("customer@example.com").success).toBe(true);
+  });
+  it("requires registration passwords to include a number and symbol", () => {
+    expect(accountPasswordSchema.safeParse("abcdefgh").success).toBe(false);
+    expect(accountPasswordSchema.safeParse("abcdefg1").success).toBe(false);
+    expect(accountPasswordSchema.safeParse("abcdefg!").success).toBe(false);
+    expect(accountPasswordSchema.safeParse("abcdef1!").success).toBe(true);
+  });
+  it("requires a valid email for customer sign-in", () => {
+    expect(customerLoginSchema.safeParse({ username: "testrun", password: "Pinnacle123!" }).success).toBe(false);
   });
   it("requires applicants to be at least 18", () => {
     const d = new Date(); d.setFullYear(d.getFullYear() - 17);

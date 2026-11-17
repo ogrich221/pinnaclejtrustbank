@@ -15,6 +15,13 @@
       "when": 1794953419818,
       "tag": "0001_allow_customer_application_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794955087922,
+      "tag": "0002_expand_account_application_access_states",
+      "breakpoints": true
     }
   ]
 }

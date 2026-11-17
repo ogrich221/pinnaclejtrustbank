@@ -51,7 +51,7 @@ export function SiteFooter() {
           <h3 className="eyebrow mb-5">Contact</h3>
           <ul className="space-y-4 text-sm">
             <li className="flex gap-3"><MapPin className="h-4 w-4 shrink-0 text-gold" />28 Wall Street, Financial District, New York, NY 10005</li>
-            <li className="flex gap-3"><Phone className="h-4 w-4 shrink-0 text-gold" /><a href="tel:+12125550199" className="hover:text-gold transition-colors">+1 (212) 555-0199</a></li>
+            <li className="flex gap-3"><Phone className="h-4 w-4 shrink-0 text-gold" /><a href="tel:+10007882" className="hover:text-gold transition-colors">+1 000 PJTB</a></li>
             <li className="flex gap-3"><Mail className="h-4 w-4 shrink-0 text-gold" /><a href="mailto:contactsupport@pinnaclejtrustbank.online" className="hover:text-gold transition-colors">contactsupport@pinnaclejtrustbank.online</a></li>
           </ul>
         </div>

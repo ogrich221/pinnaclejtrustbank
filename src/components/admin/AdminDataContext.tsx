@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { approveSharedApplication, listAccountApplications } from "@/lib/account-applications.functions";
+import { listAccountApplications, reviewSharedApplication } from "@/lib/account-applications.functions";
 import {
   CustomerRecord,
   TransactionRecord,
@@ -89,6 +89,7 @@ interface AdminDataContextType {
   markAllNotificationsRead: () => void;
   activeAdmin: AdministratorProfile;
   approveCustomerAccount: (customerId: string, reason?: string) => void;
+  rejectCustomerAccount: (customerId: string, reason?: string) => void;
   deleteCustomer: (customerId: string) => void;
   creditDebitCustomer: (params: CreditDebitParams) => void;
   editTransaction: (params: EditTransactionParams) => void;
@@ -204,7 +205,7 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const fetchSharedApplications = useServerFn(listAccountApplications);
-  const saveSharedApproval = useServerFn(approveSharedApplication);
+  const saveSharedReview = useServerFn(reviewSharedApplication);
   const [customers, setCustomers] = useState<CustomerRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
@@ -592,10 +593,22 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     customerId: string,
     newStatus: CustomerAccountStatus,
     reason: string,
-    note?: string
+    note?: string,
+    sharedSaved = false
   ) => {
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
+
+    if (target.applicationReference && !sharedSaved) {
+      const reviewReason = note ? `${reason}: ${note}` : reason;
+      void saveSharedReview({ data: { customerKey: target.id, status: newStatus, reason: reviewReason } })
+        .then(() => updateCustomerStatus(customerId, newStatus, reason, note, true))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "The shared account status could not be saved";
+          toast.error(message);
+        });
+      return;
+    }
 
     const updatedCustomers = customers.map((c) => {
       if (c.id === target.id || c.customerId === target.customerId) {
@@ -613,6 +626,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return {
           ...c,
           accountStatus: newStatus,
+          ...(newStatus === "Active" ? { verificationStatus: "Verified" as const } : {}),
           notes: updatedNotes,
         };
       }
@@ -946,11 +960,20 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.info("All notifications marked as read");
   };
 
-  const approveCustomerAccount = (customerId: string, reason?: string) => {
+  const approveCustomerAccount = (customerId: string, reason?: string, sharedSaved = false) => {
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
 
     const approvalReason = reason || "Administrator approved account application and activated banking services.";
+    if (target.applicationReference && !sharedSaved) {
+      void saveSharedReview({ data: { customerKey: target.id, status: "Approved", reason: approvalReason } })
+        .then(() => approveCustomerAccount(customerId, reason, true))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "The shared approval could not be saved";
+          toast.error(message);
+        });
+      return;
+    }
 
     const updatedList = customers.map((c) => {
       if (c.id === target.id || c.customerId === target.customerId) {
@@ -1026,15 +1049,76 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       description: `Customer ID ${target.customerId} is now Active.`,
     });
 
-    if (target.applicationReference) {
-      void saveSharedApproval({ data: { customerKey: target.id } }).catch(() => {
-        toast.error("The shared approval could not be saved", {
-          description: "Use Refresh Data to check the connection and approve again.",
-        });
-      });
-    }
   };
 
+
+  const rejectCustomerAccount = (customerId: string, reason?: string, sharedSaved = false) => {
+    const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
+    if (!target) return;
+
+    const rejectionReason = reason || "Administrator rejected the account application after reviewing the supplied information.";
+    if (target.applicationReference && !sharedSaved) {
+      void saveSharedReview({ data: { customerKey: target.id, status: "Rejected", reason: rejectionReason } })
+        .then(() => rejectCustomerAccount(customerId, reason, true))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : "The shared rejection could not be saved";
+          toast.error(message);
+        });
+      return;
+    }
+
+    const updatedList = customers.map((c) => {
+      if (c.id !== target.id && c.customerId !== target.customerId) return c;
+      return {
+        ...c,
+        accountStatus: "Rejected" as const,
+        verificationStatus: "Rejected" as const,
+        documents: (c.documents || []).map((document) => ({ ...document, status: "Rejected" as const })),
+        notes: [{
+          id: `note-${Date.now()}`,
+          authorName: activeAdmin.name,
+          authorRole: activeAdmin.role,
+          timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+          content: rejectionReason,
+          category: "Compliance" as const,
+        }, ...(c.notes || [])],
+      };
+    });
+
+    setCustomers(updatedList);
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedList));
+      const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
+      if (currentPortal) {
+        const portal = JSON.parse(currentPortal);
+        if (portal.id === target.id || portal.customerId === target.customerId) {
+          localStorage.removeItem("pjtb_current_portal_customer");
+        }
+      }
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("pjtb_sync"));
+    } catch {}
+
+    logAuditEntry(
+      "ACCOUNT_REJECTED",
+      target.customerId,
+      `Customer: ${target.fullName} (${target.accountType})`,
+      rejectionReason,
+      undefined,
+      "Warning"
+    );
+    setNotifications((previous) => [{
+      id: `notif-${Date.now()}`,
+      title: `Application Rejected: ${target.fullName}`,
+      message: `Account ${target.customerId} was rejected and cannot access online banking.`,
+      timestamp: "Just now",
+      isRead: false,
+      severity: "Warning",
+      category: "Customer",
+      actionUrl: "customers",
+    }, ...previous]);
+    toast.success(`Application rejected for ${target.fullName}`);
+  };
 
   const creditDebitCustomer = (params: CreditDebitParams) => {
     const target = customers.find((c) => c.id === params.customerId || c.customerId === params.customerId);
@@ -1309,6 +1393,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         markAllNotificationsRead,
         activeAdmin,
         approveCustomerAccount,
+        rejectCustomerAccount,
         deleteCustomer,
         creditDebitCustomer,
         editTransaction,

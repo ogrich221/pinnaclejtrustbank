@@ -5,18 +5,19 @@ import { useServerFn } from "@tanstack/react-start";
 import hero from "@/assets/hq-hero.jpg";
 import { Logo } from "@/components/site/Logo";
 import { Field } from "@/components/site/Field";
-import { loginSchema, toErrors, type FieldErrors } from "@/lib/validation";
-import { INITIAL_CUSTOMERS } from "@/components/admin/mockData";
-import {
-  findCustomerForLogin,
-  PREVIEW_LOGIN,
-  readCustomerCredentials,
-  verifyCustomerPassword,
-} from "@/lib/customer-access";
+import { customerLoginSchema, toErrors, type FieldErrors } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentCustomerApplication } from "@/lib/account-applications.functions";
+import {
+  getCustomerAccessMessage,
+  sharedApplicationStatusSchema,
+} from "@/lib/account-applications";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined; reason?: string | undefined } => ({
+    redirect: typeof search["redirect"] === "string" ? search["redirect"] : undefined,
+    reason: typeof search["reason"] === "string" ? search["reason"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Secure Login — Pinnacle J Trust Bank" },
@@ -33,11 +34,16 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const fetchCurrentApplication = useServerFn(getCurrentCustomerApplication);
+  const parsedReason = sharedApplicationStatusSchema.safeParse(search.reason);
+  const initialNotice = search.reason
+    ? getCustomerAccessMessage(parsedReason.success ? parsedReason.data : null)
+    : "";
   const [v, setV] = useState({ username: "", password: "" });
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(initialNotice);
   const [busy, setBusy] = useState(false);
 
   const openPortal = async (customer: unknown) => {
@@ -50,7 +56,7 @@ function Login() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setNotice("");
-    const result = loginSchema.safeParse(v);
+    const result = customerLoginSchema.safeParse(v);
     if (!result.success) {
       setErrors(toErrors(result.error));
       return;
@@ -59,44 +65,32 @@ function Login() {
     setErrors({});
     setBusy(true);
     try {
-      const stored = localStorage.getItem("pjtb_admin_customers_v3");
-      const parsed = stored ? JSON.parse(stored) : null;
-      const customers = Array.isArray(parsed) ? parsed : INITIAL_CUSTOMERS;
-      const credentials = readCustomerCredentials();
-      const localCustomer = findCustomerForLogin(customers, v.username, credentials);
-
-      if (v.username.includes("@")) {
-        const { error: cloudError } = await supabase.auth.signInWithPassword({
-          email: v.username.trim(),
-          password: v.password,
-        });
-        if (!cloudError) {
-          const sharedCustomer = await fetchCurrentApplication();
-          if (sharedCustomer) {
-            await openPortal(sharedCustomer);
-            return;
-          }
-          await supabase.auth.signOut();
-        }
-      }
-
-      if (localCustomer && await verifyCustomerPassword(localCustomer, v.password, credentials)) {
-        await openPortal(localCustomer);
+      const { error: cloudError } = await supabase.auth.signInWithPassword({
+        email: result.data.username,
+        password: result.data.password,
+      });
+      if (cloudError) {
+        setNotice(cloudError.code === "email_not_confirmed"
+          ? "Confirm your email before signing in. Your application will still require administrator approval."
+          : "The email or password is incorrect. Check your details and try again.");
         return;
       }
 
-      setNotice("The email, username or password is incorrect. Check your details and try again.");
+      const sharedCustomer = await fetchCurrentApplication();
+      if (sharedCustomer?.canAccess) {
+        await openPortal(sharedCustomer);
+        return;
+      }
+
+      const message = getCustomerAccessMessage(sharedCustomer?.approvalStatus ?? null);
+      await supabase.auth.signOut();
+      setNotice(message);
     } catch {
+      await supabase.auth.signOut();
       setNotice("We couldn't complete sign-in. Please try again or reset your password.");
     } finally {
       setBusy(false);
     }
-  };
-
-  const fillPreviewCredentials = () => {
-    setV({ username: PREVIEW_LOGIN.username, password: PREVIEW_LOGIN.password });
-    setErrors({});
-    setNotice("");
   };
 
   return (
@@ -121,8 +115,8 @@ function Login() {
               </div>
             )}
             <form onSubmit={submit} noValidate className="mt-8 space-y-6">
-              <Field id="username" label="Email or preview username" error={errors.username}>
-                <input id="username" autoComplete="username" className="field" value={v.username} onChange={(e) => setV({ ...v, username: e.target.value })} aria-invalid={!!errors.username} />
+              <Field id="username" label="Email address" error={errors.username}>
+                <input id="username" type="email" autoComplete="username" className="field" value={v.username} onChange={(e) => setV({ ...v, username: e.target.value })} aria-invalid={!!errors.username} />
               </Field>
               <Field id="password" label="Password" error={errors.password}>
                 <div className="relative">
@@ -138,16 +132,8 @@ function Login() {
               </div>
             </form>
 
-            <div className="mt-6 rounded-xl border border-gold/25 bg-gold/5 p-4 text-xs">
-              <p className="font-semibold uppercase tracking-[0.16em] text-gold">Preview account</p>
-              <p className="mt-2 leading-relaxed text-muted-foreground">
-                Username: <code className="font-semibold text-navy">{PREVIEW_LOGIN.username}</code>
-                <span className="mx-2 text-border">·</span>
-                Password: <code className="font-semibold text-navy">{PREVIEW_LOGIN.password}</code>
-              </p>
-              <button type="button" onClick={fillPreviewCredentials} className="mt-3 font-semibold text-navy underline-offset-4 hover:underline">
-                Fill preview credentials
-              </button>
+            <div className="mt-6 rounded-xl border border-gold/25 bg-gold/5 p-4 text-xs leading-relaxed text-muted-foreground">
+              Only approved customer accounts can access online banking. New applicants can sign in after email confirmation and administrator approval.
             </div>
 
             <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-gold" /> Never share your password or verification codes with anyone.</p>

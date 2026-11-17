@@ -1,5 +1,17 @@
 # Admin and customer portal verification
 
+## Uploaded end-to-end account audit
+- [x] Test registration, validation, duplicate prevention, and default pending status.
+- [ ] Enforce pending, rejected, suspended, and approved access rules in customer login and portal URLs. Pending and approved access are browser-verified; rejected and suspended scenarios remain untested.
+- [ ] Test and synchronize admin approval, rejection, suspension, and reactivation with shared storage. Approval is browser-verified; the other status transitions remain untested.
+- [x] Verify admin-only routes/functions, self-approval prevention, sign-out, and navigation entry points.
+- [x] Remove conflicting customer login fallbacks while preserving the existing design and working features.
+- [x] Repeat the real browser scenarios, run regression tests, and report any remaining limitations.
+- [x] Add a customer debit card section with test card details, persistent preview controls, and a dashboard entry point.
+- [ ] Verify the installed Tawk.to live-chat widget loads outside the sandbox; local Chromium blocks its cross-origin script response.
+- [x] Replace the public contact number with +1 000 PJTB and verify its telephone links.
+- [x] Check every page on phone and desktop sizes; all public pages load without horizontal overflow, and protected pages redirect correctly.
+
 - [x] Reorganize the customer dashboard and add editable personal details plus a persisted light/dark theme switch in Profile & Settings.
 
 - [x] Add secure customer password recovery with emailed reset links and a public reset-password page.

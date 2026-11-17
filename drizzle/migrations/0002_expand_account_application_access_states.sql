@@ -1,0 +1,3 @@
+ALTER TABLE public.account_applications DROP CONSTRAINT IF EXISTS account_applications_status_check;
+ALTER TABLE public.account_applications ADD CONSTRAINT account_applications_status_check CHECK (status IN ('Pending', 'Approved', 'Rejected', 'Suspended', 'Restricted', 'Flagged'));
+CREATE UNIQUE INDEX IF NOT EXISTS account_applications_email_unique_idx ON public.account_applications (lower(email));
