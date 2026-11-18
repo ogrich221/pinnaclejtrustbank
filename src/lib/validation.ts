@@ -63,3 +63,16 @@ export function toErrors(err: z.ZodError): FieldErrors {
   for (const i of err.issues) { const k = String(i.path[0]); if (!out[k]) out[k] = i.message; }
   return out as FieldErrors;
 }
+
+export const adminCreateCustomerSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the full name").max(160),
+  email: z.string().trim().email("Enter a valid email").max(255),
+  phone: z.string().trim().min(5, "Enter a phone number").max(40),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128),
+  accountType: z.string().trim().min(2).max(80),
+  currency: z.string().trim().length(3),
+  country: z.string().trim().min(2, "Enter the country").max(80),
+  street: z.string().trim().max(200).optional().default(""),
+  city: z.string().trim().max(100).optional().default(""),
+});
+export type AdminCreateCustomerInput = z.infer<typeof adminCreateCustomerSchema>;

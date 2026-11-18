@@ -8,8 +8,8 @@ import {
   sharedCustomerSchema,
   type SharedCustomer,
 } from "./account-applications";
-import { profileDetailsSchema } from "./validation";
-import { getAdjustedBalances } from "./banking";
+import { adminCreateCustomerSchema, profileDetailsSchema } from "./validation";
+import { DEFAULT_DAILY_TRANSFER_LIMIT, getAdjustedBalances } from "./banking";
 
 const submissionSchema = z.object({
   reference: z.string().trim().min(8).max(100),
@@ -302,4 +302,86 @@ export const reviewSharedApplication = createServerFn({ method: "POST" })
       .eq("customer_key", data.customerKey);
     if (error) throw new Error("The account review could not be saved");
     return { ok: true, status: data.status };
+  });
+
+export const adminCreateCustomer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => adminCreateCustomerSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleError || !isAdmin) throw new Error("Administrator access required");
+
+    const email = data.email.trim().toLowerCase();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const dup = await supabaseAdmin.from("account_applications").select("id").eq("email", email).maybeSingle();
+    if (dup.data) throw new Error("A customer with this email already exists");
+
+    const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName },
+    });
+    if (authError || !created.user) {
+      throw new Error(authError?.message?.includes("already") ? "A sign-in already exists for this email" : "The customer sign-in could not be created");
+    }
+
+    const now = new Date();
+    const stamp = now.toISOString().replace("T", " ").substring(0, 16);
+    const rand = (min: number, span: number) => Math.floor(min + Math.random() * span);
+    const reference = `PJ-APP-${rand(100000, 900000)}`;
+    const parts = data.fullName.trim().split(/\s+/);
+    const initials = `${(parts[0]?.[0] || "U").toUpperCase()}${(parts[parts.length - 1]?.[0] || "C").toUpperCase()}`;
+    const last4 = rand(1000, 9000);
+    const customer = {
+      id: `cust-${Date.now()}`,
+      customerId: `PJ-${rand(89200, 800)}`,
+      applicationReference: reference,
+      fullName: data.fullName.trim(),
+      initials,
+      email,
+      phone: data.phone,
+      accountNumber: `PJTB-${rand(1000, 9000)}-${last4}-${rand(10, 90)}`,
+      maskedAccountNumber: `PJTB-••••-${last4}`,
+      accountType: data.accountType,
+      jurisdiction: data.country,
+      currency: data.currency.toUpperCase(),
+      balance: 0,
+      availableBalance: 0,
+      dailyTransferLimit: DEFAULT_DAILY_TRANSFER_LIMIT,
+      registrationDate: now.toISOString().split("T")[0],
+      lastLogin: "Pending first session",
+      address: { street: data.street, city: data.city, postalCode: "", country: data.country },
+      notes: [{
+        id: `note-${Date.now()}`,
+        authorName: "Administrator",
+        authorRole: "Bank Administrator",
+        timestamp: stamp,
+        content: `Customer account created directly by an administrator. Ref: ${reference}.`,
+        category: "Audit",
+      }],
+      documents: [],
+      securityHistory: [],
+      ...getCustomerAccessState("Approved"),
+    };
+
+    const { error } = await supabaseAdmin.from("account_applications").insert({
+      reference,
+      customer_key: customer.id,
+      customer_id: customer.customerId,
+      full_name: customer.fullName,
+      email,
+      application_data: asJson(customer),
+      status: "Approved",
+      reviewed_at: now.toISOString(),
+      reviewed_by: context.userId,
+    });
+    if (error) {
+      await supabaseAdmin.auth.admin.deleteUser(created.user.id);
+      throw new Error("The customer account could not be saved");
+    }
+    return { ok: true, customerId: customer.customerId, email };
   });
