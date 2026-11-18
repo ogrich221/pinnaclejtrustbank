@@ -803,9 +803,38 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
-  const editCustomerDetails = (customerId: string, details: Partial<CustomerRecord>) => {
+  const editCustomerDetails = (customerId: string, incomingDetails: Partial<CustomerRecord>) => {
     const target = customers.find((c) => c.id === customerId || c.customerId === customerId);
     if (!target) return;
+
+    // Balance changes must go through the shared ledger so the customer sees them.
+    const { balance: requestedBalance, availableBalance: _ignoredAvailable, ...details } = incomingDetails;
+    const delta = typeof requestedBalance === "number" && Number.isFinite(requestedBalance)
+      ? Math.round((requestedBalance - (target.balance || 0)) * 100) / 100
+      : 0;
+    if (delta !== 0) {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      void saveSharedBalanceAdjustment({
+        data: {
+          customerKey: target.id,
+          transactionId: `tx-${Date.now()}`,
+          reference: `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`,
+          type: delta > 0 ? "Credit" : "Debit",
+          amount: Math.abs(delta),
+          date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+          time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+          narration: "Administrative balance correction",
+        },
+      }).then(() => {
+        toast.success(`Balance updated for ${target.fullName}`);
+        void syncSharedApplications();
+      }).catch((error) => {
+        toast.error("The balance change could not be saved", {
+          description: error instanceof Error ? error.message : "Please try again.",
+        });
+      });
+    }
 
     const nextCustomerId = details.customerId?.trim() || target.customerId;
     const nextAccountNumber = details.accountNumber?.trim() || target.accountNumber;
@@ -1141,7 +1170,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const adjustmentId = `tx-${Date.now()}`;
     const txRef = `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    if (target.applicationReference) {
+    {
       try {
         await saveSharedBalanceAdjustment({
           data: {
@@ -1187,6 +1216,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     setCustomers(updatedCustomers);
+    void syncSharedApplications();
     try {
       localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
       const currentPortal = localStorage.getItem("pjtb_current_portal_customer");
