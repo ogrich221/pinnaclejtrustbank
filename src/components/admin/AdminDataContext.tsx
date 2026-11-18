@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { listAccountApplications, reviewSharedApplication } from "@/lib/account-applications.functions";
+import { adjustSharedCustomerBalance, listAccountApplications, reviewSharedApplication } from "@/lib/account-applications.functions";
 import {
   CustomerRecord,
   TransactionRecord,
@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import {
   calculateVerificationStatus,
+  DEFAULT_DAILY_TRANSFER_LIMIT,
   getAdjustedBalances,
   mapAdminTransactionStatus,
 } from "@/lib/banking";
@@ -91,7 +92,7 @@ interface AdminDataContextType {
   approveCustomerAccount: (customerId: string, reason?: string) => void;
   rejectCustomerAccount: (customerId: string, reason?: string) => void;
   deleteCustomer: (customerId: string) => void;
-  creditDebitCustomer: (params: CreditDebitParams) => void;
+  creditDebitCustomer: (params: CreditDebitParams) => Promise<boolean>;
   editTransaction: (params: EditTransactionParams) => void;
   resetToDefaults: () => void;
   refreshAllData: () => void;
@@ -185,7 +186,7 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
     dailyTransferLimit:
       typeof raw.dailyTransferLimit === "number" && Number.isFinite(raw.dailyTransferLimit) && raw.dailyTransferLimit >= 0
         ? raw.dailyTransferLimit
-        : 50000,
+        : DEFAULT_DAILY_TRANSFER_LIMIT,
     holdBalance,
     dateOpened: String(raw.dateOpened || raw.registrationDate || new Date().toISOString().substring(0, 10)),
     registrationDate: String(raw.registrationDate || raw.dateOpened || new Date().toISOString().substring(0, 10)),
@@ -206,6 +207,7 @@ export function normalizeCustomerRecord(raw: any): CustomerRecord | null {
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const fetchSharedApplications = useServerFn(listAccountApplications);
   const saveSharedReview = useServerFn(reviewSharedApplication);
+  const saveSharedBalanceAdjustment = useServerFn(adjustSharedCustomerBalance);
   const [customers, setCustomers] = useState<CustomerRecord[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
@@ -1120,9 +1122,9 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.success(`Application rejected for ${target.fullName}`);
   };
 
-  const creditDebitCustomer = (params: CreditDebitParams) => {
+  const creditDebitCustomer = async (params: CreditDebitParams): Promise<boolean> => {
     const target = customers.find((c) => c.id === params.customerId || c.customerId === params.customerId);
-    if (!target) return;
+    if (!target) return false;
 
     const amt = Math.abs(params.amount);
     const isCredit = params.type === "Credit";
@@ -1131,11 +1133,36 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toast.error(isCredit ? "Enter a valid credit amount" : "Debit exceeds the available balance", {
         description: `No ledger entry was created for ${target.fullName}.`,
       });
-      return;
+      return false;
     }
 
     const { balance: newBalance, availableBalance: newAvail } = adjustedBalances;
     const timestampStr = `${params.date} ${params.time}`;
+    const adjustmentId = `tx-${Date.now()}`;
+    const txRef = `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    if (target.applicationReference) {
+      try {
+        await saveSharedBalanceAdjustment({
+          data: {
+            customerKey: target.id,
+            transactionId: adjustmentId,
+            reference: txRef,
+            type: params.type,
+            amount: amt,
+            date: params.date,
+            time: params.time,
+            narration: params.narration,
+            ...(params.counterparty ? { counterparty: params.counterparty } : {}),
+          },
+        });
+      } catch (error) {
+        toast.error("The balance adjustment could not be saved", {
+          description: error instanceof Error ? error.message : "Please try again. No local ledger entry was created.",
+        });
+        return false;
+      }
+    }
 
     const updatedCustomers = customers.map((c) => {
       if (c.id === target.id || c.customerId === target.customerId) {
@@ -1177,9 +1204,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     } catch {}
 
-    const txRef = `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`;
     const newTx: TransactionRecord = {
-      id: `tx-${Date.now()}`,
+      id: adjustmentId,
       reference: txRef,
       customerId: target.customerId,
       customerName: target.fullName,
@@ -1269,6 +1295,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     toast.success(`Account successfully ${params.type.toLowerCase()}ed`, {
       description: `${target.fullName}: ${target.currency} ${amt.toLocaleString("en-US", { minimumFractionDigits: 2 })}. Balance: ${target.currency} ${newBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}.`,
     });
+    return true;
   };
 
   const editTransaction = (params: EditTransactionParams) => {

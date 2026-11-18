@@ -4,6 +4,8 @@ import type {
   VerificationStatus,
 } from "@/components/admin/types";
 
+export const DEFAULT_DAILY_TRANSFER_LIMIT = 10_000_000;
+
 export function calculateVerificationStatus(documents: VerificationDocument[]): VerificationStatus {
   if (documents.length === 0) return "Unverified";
   if (documents.some((document) => document.status === "Rejected")) return "Rejected";

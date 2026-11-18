@@ -5,6 +5,7 @@ import {
   AdministratorProfile,
   SystemNotification,
 } from "./types";
+import { DEFAULT_DAILY_TRANSFER_LIMIT } from "@/lib/banking";
 
 export const INITIAL_ADMIN: AdministratorProfile = {
   id: "admin-master",
@@ -43,7 +44,7 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     currency: "USD",
     balance: 0.0,
     availableBalance: 0.0,
-    dailyTransferLimit: 50000.0,
+    dailyTransferLimit: DEFAULT_DAILY_TRANSFER_LIMIT,
     registrationDate: "2026-11-16",
     verificationStatus: "Pending",
     accountStatus: "Pending",

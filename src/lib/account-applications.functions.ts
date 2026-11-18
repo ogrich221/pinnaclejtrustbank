@@ -9,10 +9,23 @@ import {
   type SharedCustomer,
 } from "./account-applications";
 import { profileDetailsSchema } from "./validation";
+import { getAdjustedBalances } from "./banking";
 
 const submissionSchema = z.object({
   reference: z.string().trim().min(8).max(100),
   customer: sharedCustomerSchema,
+});
+
+const balanceAdjustmentSchema = z.object({
+  customerKey: z.string().trim().min(3).max(120),
+  transactionId: z.string().trim().min(3).max(120),
+  reference: z.string().trim().min(8).max(100),
+  type: z.enum(["Credit", "Debit"]),
+  amount: z.number().finite().positive().max(1_000_000_000_000),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  narration: z.string().trim().min(1).max(500),
+  counterparty: z.string().trim().max(160).optional(),
 });
 
 function asJson(value: unknown): Json {
@@ -156,6 +169,77 @@ export const updateCurrentCustomerProfile = createServerFn({ method: "POST" })
       .eq("email", email);
     if (error) throw new Error("Your personal details could not be saved");
     return { ok: true };
+  });
+
+export const adjustSharedCustomerBalance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => balanceAdjustmentSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleError || !isAdmin) throw new Error("Administrator access required");
+
+    const existing = await context.supabase
+      .from("account_applications")
+      .select("email, application_data")
+      .eq("customer_key", data.customerKey)
+      .maybeSingle();
+    if (existing.error || !existing.data) throw new Error("Customer account not found");
+
+    const adminEmail = typeof context.claims.email === "string" ? context.claims.email.toLowerCase() : "";
+    if (adminEmail && existing.data.email.toLowerCase() === adminEmail) {
+      throw new Error("Administrators cannot adjust their own customer account");
+    }
+
+    const current = requireObject(existing.data.application_data);
+    const currentBalance = typeof current["balance"] === "number" && Number.isFinite(current["balance"]) ? current["balance"] : 0;
+    const currentAvailable = typeof current["availableBalance"] === "number" && Number.isFinite(current["availableBalance"])
+      ? current["availableBalance"]
+      : currentBalance;
+    const adjusted = getAdjustedBalances(currentBalance, currentAvailable, data.type, data.amount);
+    if (!adjusted) {
+      throw new Error(data.type === "Debit" ? "Debit exceeds the available balance" : "Enter a valid credit amount");
+    }
+
+    const timestamp = `${data.date} ${data.time}`;
+    const notes = Array.isArray(current["notes"]) ? current["notes"] : [];
+    const portalTransactions = Array.isArray(current["portalTransactions"]) ? current["portalTransactions"] : [];
+    const currency = typeof current["currency"] === "string" ? current["currency"] : "USD";
+    const applicationData = {
+      ...current,
+      ...adjusted,
+      notes: [{
+        id: `note-${Date.now()}`,
+        authorName: "Administrator",
+        authorRole: "Bank Administrator",
+        timestamp,
+        content: `Manual ${data.type}: ${currency} ${data.amount.toFixed(2)}. Narration: ${data.narration}. Counterparty: ${data.counterparty || "Direct Ledger"}`,
+        category: "Audit",
+      }, ...notes],
+      portalTransactions: [{
+        id: data.transactionId,
+        reference: data.reference,
+        date: timestamp,
+        description: data.narration,
+        category: data.type === "Credit" ? "Deposit" : "Withdrawal",
+        amount: data.amount,
+        currency,
+        status: "Completed",
+        counterparty: data.counterparty || (data.type === "Credit" ? "Pinnacle J Reserve Treasury" : "Direct Settlement"),
+      }, ...portalTransactions],
+    };
+
+    const { data: updated, error } = await context.supabase
+      .from("account_applications")
+      .update({ application_data: asJson(applicationData) })
+      .eq("customer_key", data.customerKey)
+      .select("customer_key")
+      .maybeSingle();
+    if (error || !updated) throw new Error("The balance adjustment could not be saved");
+
+    return { ok: true, ...adjusted };
   });
 
 export const reviewSharedApplication = createServerFn({ method: "POST" })

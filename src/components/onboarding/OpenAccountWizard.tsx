@@ -25,6 +25,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { submitAccountApplication } from "@/lib/account-applications.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { accountPasswordSchema, registrationEmailSchema } from "@/lib/validation";
+import { DEFAULT_DAILY_TRANSFER_LIMIT } from "@/lib/banking";
 
 export interface OnboardingData {
   // Step 1: Personal Information
@@ -333,7 +334,7 @@ export const OpenAccountWizard: React.FC = () => {
         currency: form.currency,
         balance: 0.0,
         availableBalance: 0.0,
-        dailyTransferLimit: form.accountType === "Premium Account" ? 2500000.0 : 50000.0,
+        dailyTransferLimit: DEFAULT_DAILY_TRANSFER_LIMIT,
         registrationDate: new Date().toISOString().split("T")[0],
         verificationStatus: "Pending",
         accountStatus: "Pending",

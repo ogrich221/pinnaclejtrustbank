@@ -32,6 +32,7 @@ import {
 import { CustomerRecord, AdministrativeNote } from "../types";
 import { CreditDebitModal } from "./CreditDebitModal";
 import { useAdminData } from "../AdminDataContext";
+import { DEFAULT_DAILY_TRANSFER_LIMIT } from "@/lib/banking";
 
 interface CustomerProfileModalProps {
   customer: CustomerRecord | null;
@@ -76,7 +77,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
     currency: customer?.currency || "USD",
     balance: customer?.balance ?? 0,
     availableBalance: customer?.availableBalance ?? 0,
-    dailyTransferLimit: customer?.dailyTransferLimit || 50000,
+    dailyTransferLimit: customer?.dailyTransferLimit || DEFAULT_DAILY_TRANSFER_LIMIT,
     email: customer?.email || "",
     phone: customer?.phone || "",
     street: customer?.address?.street || "",
@@ -100,7 +101,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
         currency: customer.currency || "USD",
         balance: customer.balance ?? 0,
         availableBalance: customer.availableBalance ?? 0,
-        dailyTransferLimit: customer.dailyTransferLimit || 50000,
+        dailyTransferLimit: customer.dailyTransferLimit || DEFAULT_DAILY_TRANSFER_LIMIT,
         email: customer.email || "",
         phone: customer.phone || "",
         street: customer.address?.street || "",

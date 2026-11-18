@@ -51,7 +51,7 @@ import {
 import { LogoMark } from "@/components/site/Logo";
 import { CustomerDebitCard } from "@/components/portal/CustomerDebitCard";
 import { toast } from "sonner";
-import { getTransferValidationError, mapAdminTransactionStatus } from "@/lib/banking";
+import { DEFAULT_DAILY_TRANSFER_LIMIT, getTransferValidationError, mapAdminTransactionStatus } from "@/lib/banking";
 import type { CustomerBeneficiary, SecurityEvent } from "@/components/admin/types";
 
 type Beneficiary = CustomerBeneficiary;
@@ -345,6 +345,7 @@ export const CustomerDashboard: React.FC<{ initialCustomer?: any }> = ({ initial
 
   // Transactions list (starts at zero for all new & testrun customer profiles)
   const [transactions, setTransactions] = useState<PortalTransaction[]>(() => {
+    if (Array.isArray(initialCustomer?.portalTransactions)) return initialCustomer.portalTransactions;
     try {
       const savedCustomer = localStorage.getItem("pjtb_current_portal_customer");
       const currentCust = savedCustomer ? JSON.parse(savedCustomer) : null;
@@ -419,7 +420,11 @@ export const CustomerDashboard: React.FC<{ initialCustomer?: any }> = ({ initial
           const targetId = latestCust.customerId || latestCust.id;
           const userTxKey = `pjtb_portal_tx_${targetId}`;
           const savedUserTx = localStorage.getItem(userTxKey) || localStorage.getItem(`pjtb_portal_tx_${latestCust.id}`);
-          if (savedUserTx) {
+          if (Array.isArray(latestCust.portalTransactions)) {
+            setTransactions(latestCust.portalTransactions);
+            localStorage.setItem(userTxKey, JSON.stringify(latestCust.portalTransactions));
+            localStorage.setItem(`pjtb_portal_tx_${latestCust.id}`, JSON.stringify(latestCust.portalTransactions));
+          } else if (savedUserTx) {
             setTransactions(JSON.parse(savedUserTx));
           } else {
             const adminTxStored = localStorage.getItem("pjtb_admin_transactions_v3");
@@ -487,6 +492,12 @@ export const CustomerDashboard: React.FC<{ initialCustomer?: any }> = ({ initial
         }
         setCustomer(shared);
         localStorage.setItem("pjtb_current_portal_customer", JSON.stringify(shared));
+        const sharedTransactions = (shared as any).portalTransactions;
+        if (Array.isArray(sharedTransactions)) {
+          setTransactions(sharedTransactions);
+          localStorage.setItem(`pjtb_portal_tx_${shared.customerId}`, JSON.stringify(sharedTransactions));
+          localStorage.setItem(`pjtb_portal_tx_${shared.id}`, JSON.stringify(sharedTransactions));
+        }
       } catch {
         // Keep the current session if a transient connection check fails.
       }
@@ -696,7 +707,7 @@ export const CustomerDashboard: React.FC<{ initialCustomer?: any }> = ({ initial
     return getTransferValidationError({
       accountStatus: customer?.accountStatus || "Unavailable",
       availableBalance: Number(customer?.availableBalance || 0),
-      dailyTransferLimit: Number(customer?.dailyTransferLimit ?? 50000),
+      dailyTransferLimit: Number(customer?.dailyTransferLimit ?? DEFAULT_DAILY_TRANSFER_LIMIT),
       amount,
       fee,
       outboundToday,

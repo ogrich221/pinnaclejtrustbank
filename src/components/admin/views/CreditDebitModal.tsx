@@ -74,25 +74,27 @@ export const CreditDebitModal: React.FC<CreditDebitModalProps> = ({
   const projectedBalance = currentBalance + delta;
   const debitExceedsBalance = type === "Debit" && numAmount > currentBalance;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (numAmount <= 0 || debitExceedsBalance) return;
     if (!narration.trim()) return;
 
     setIsSubmitting(true);
-    creditDebitCustomer({
-      customerId: customer.id,
-      type,
-      amount: numAmount,
-      date,
-      time,
-      narration: narration.trim(),
-      ...(counterparty.trim() ? { counterparty: counterparty.trim() } : {}),
-      category,
-    });
-
-    setIsSubmitting(false);
-    onClose();
+    try {
+      const saved = await creditDebitCustomer({
+        customerId: customer.id,
+        type,
+        amount: numAmount,
+        date,
+        time,
+        narration: narration.trim(),
+        ...(counterparty.trim() ? { counterparty: counterparty.trim() } : {}),
+        category,
+      });
+      if (saved) onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

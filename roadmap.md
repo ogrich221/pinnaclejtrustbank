@@ -1,5 +1,10 @@
 # Admin and customer portal verification
 
+## Transfer limit and balance adjustments
+- [x] Set the default and existing daily transfer limit to $10,000,000.
+- [x] Verify admin credits and debits update balances, transaction history, and the shared customer record.
+- [x] Verify invalid debits cannot overdraw the available balance.
+
 ## Uploaded end-to-end account audit
 - [x] Test registration, validation, duplicate prevention, and default pending status.
 - [ ] Enforce pending, rejected, suspended, and approved access rules in customer login and portal URLs. Pending and approved access are browser-verified; rejected and suspended scenarios remain untested.
