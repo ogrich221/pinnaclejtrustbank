@@ -818,6 +818,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       void saveSharedBalanceAdjustment({
         data: {
           customerKey: target.id,
+          customerId: target.customerId,
+          ...(target.email ? { email: target.email } : {}),
           transactionId: `tx-${Date.now()}`,
           reference: `PJTB-ADJ-${Math.floor(100000 + Math.random() * 900000)}`,
           type: delta > 0 ? "Credit" : "Debit",
@@ -1175,6 +1177,8 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         await saveSharedBalanceAdjustment({
           data: {
             customerKey: target.id,
+            customerId: target.customerId,
+            ...(target.email ? { email: target.email } : {}),
             transactionId: adjustmentId,
             reference: txRef,
             type: params.type,

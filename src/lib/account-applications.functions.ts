@@ -26,6 +26,8 @@ const balanceAdjustmentSchema = z.object({
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   narration: z.string().trim().min(1).max(500),
   counterparty: z.string().trim().max(160).optional(),
+  customerId: z.string().trim().max(120).optional(),
+  email: z.string().trim().max(255).optional(),
 });
 
 function asJson(value: unknown): Json {
@@ -181,12 +183,17 @@ export const adjustSharedCustomerBalance = createServerFn({ method: "POST" })
     });
     if (roleError || !isAdmin) throw new Error("Administrator access required");
 
-    const existing = await context.supabase
+    const filters = [`customer_key.eq.${data.customerKey}`];
+    if (data.customerId) filters.push(`customer_id.eq.${data.customerId}`);
+    if (data.email) filters.push(`email.eq.${data.email.toLowerCase()}`);
+    const lookup = await context.supabase
       .from("account_applications")
-      .select("email, application_data")
-      .eq("customer_key", data.customerKey)
-      .maybeSingle();
-    if (existing.error || !existing.data) throw new Error("Customer account not found");
+      .select("customer_key, email, application_data")
+      .or(filters.map((f) => f.replace(/,/g, "")).join(","))
+      .limit(1);
+    const existing = { error: lookup.error, data: lookup.data?.[0] ?? null };
+    if (existing.error || !existing.data) throw new Error("Customer account not found in the shared registry");
+    const rowKey = existing.data.customer_key;
 
     const adminEmail = typeof context.claims.email === "string" ? context.claims.email.toLowerCase() : "";
     if (adminEmail && existing.data.email.toLowerCase() === adminEmail) {
@@ -234,7 +241,7 @@ export const adjustSharedCustomerBalance = createServerFn({ method: "POST" })
     const { data: updated, error } = await context.supabase
       .from("account_applications")
       .update({ application_data: asJson(applicationData) })
-      .eq("customer_key", data.customerKey)
+      .eq("customer_key", rowKey)
       .select("customer_key")
       .maybeSingle();
     if (error || !updated) throw new Error("The balance adjustment could not be saved");
