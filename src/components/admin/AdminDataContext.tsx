@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { adjustSharedCustomerBalance, listAccountApplications, reviewSharedApplication } from "@/lib/account-applications.functions";
@@ -369,6 +369,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const activeAdmin: AdministratorProfile = INITIAL_ADMIN;
 
+  const sharedRegistryLoaded = useRef(false);
   const syncSharedApplications = useCallback(async () => {
     try {
       const shared = await fetchSharedApplications();
@@ -384,8 +385,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const local = previous.find((customer) => matches(customer, remote));
           return local ? { ...local, ...remote } : remote;
         });
-        const localOnly = previous.filter((local) => !normalized.some((remote) => matches(local, remote)));
-        return [...sharedRows, ...localOnly];
+        // The shared registry is the source of truth: stale browser-only copies are dropped
+        // so admins can never credit a ghost record that customers will never see.
+        sharedRegistryLoaded.current = true;
+        try { localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(sharedRows)); } catch {}
+        return sharedRows;
       });
 
       setNotifications((previous) => {
@@ -433,7 +437,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             const missingInState = storedList.filter(
               (sc) => sc && !customers.some((c) => c && (c.id === sc.id || c.customerId === sc.customerId))
             );
-            if (missingInState.length > 0) {
+            if (missingInState.length > 0 && !sharedRegistryLoaded.current) {
               setCustomers((prev) => [...missingInState, ...prev]);
               return;
             }
